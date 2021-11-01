@@ -1,0 +1,12 @@
+*.macaroon
+tls.cert
+__pycache__/
+*.pyc
+venv/
+build/
+dist/
+*.egg-info/
+*.tar.gz
+.DS_Store
+__MACOSX/
+.scratch/
