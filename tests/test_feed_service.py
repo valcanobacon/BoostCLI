@@ -1,0 +1,88 @@
+from typing import Final
+from unittest.mock import Mock, sentinel
+
+import pytest
+import requests
+from bs4 import BeautifulSoup
+
+from src.models import PodcastValue, PodcastValueDestination
+from src.providers.feed_provider import FeedError, FeedProvider, FeedResponse
+from src.services.feed_service import FeedService
+
+FEED: Final = """
+<rss version="2.0">
+  <channel>
+    <podcast:value type="lightning" method="keysend" suggested="0.00001000000">
+      <podcast:valueRecipient name="Adam" type="node" address="abc" split="50"/>
+      <podcast:valueRecipient name="Dave" type="node" address="cba" split="50"/>
+      <podcast:valueRecipient name="Podcast Index" type="node" address="xyz" split="1" fee=true/>
+    </podcast:value>
+  </channel>
+</rss>
+"""
+
+
+@pytest.fixture
+def feed():
+    return BeautifulSoup(FEED, "lxml")
+
+
+@pytest.fixture
+def podcast_value():
+    return PodcastValue(
+        suggested="0.00001000000",
+        podcast_url=sentinel.feed_url,
+        destinations=[
+            PodcastValueDestination(
+                name="Adam",
+                address="abc",
+                split=50,
+                fee=False,
+            ),
+            PodcastValueDestination(
+                name="Dave",
+                address="cba",
+                split=50,
+                fee=False,
+            ),
+            PodcastValueDestination(
+                name="Podcast Index",
+                address="xyz",
+                split=1,
+                fee=True,
+            ),
+        ],
+    )
+
+
+@pytest.fixture
+def provider_mock(feed):
+    return Mock(spec=FeedProvider, set_spec=True)
+
+
+@pytest.fixture
+def service(provider_mock):
+    return FeedService(
+        provider=provider_mock,
+    )
+
+
+@pytest.fixture
+def podcast_value_response(provider_mock, feed):
+    return FeedResponse(
+        request=provider_mock.return_value,
+        data=feed,
+    )
+
+
+@pytest.fixture
+def feed_error(provider_mock):
+    return FeedError(
+        request=provider_mock.return_value,
+    )
+
+
+def test_podcast_value(service, provider_mock, podcast_value, podcast_value_response):
+    provider_mock.request.return_value = podcast_value_response
+    response = service.podcast_value(sentinel.feed_url)
+    assert response == podcast_value
