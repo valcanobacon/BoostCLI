@@ -126,6 +126,7 @@ def podcast(ctx, feed_url):
 
     if podcast_value is None:
         click.echo("No Value Block")
+        exit(1)
 
     click.echo(
         tabulate(
