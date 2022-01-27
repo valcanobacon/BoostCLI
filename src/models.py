@@ -59,7 +59,12 @@ class BoostInvoice:
 
     @classmethod
     def create(
-        cls, podcast_value: PodcastValue, amount: int, message: str, sender_name: str
+        cls,
+        podcast_value: PodcastValue,
+        amount: int,
+        message: str,
+        sender_name: str,
+        sender_app_name: str,
     ) -> "BoostInvoice":
 
         invoice = BoostInvoice(
@@ -83,6 +88,7 @@ class BoostInvoice:
                     podcast_index_item_id=invoice.podcast_value.podcast_index_item_id,
                     podcast_guid=invoice.podcast_value.podcast_guid,
                     receiver_name=destination.name,
+                    sender_app_name=sender_app_name,
                 )
             )
 
@@ -112,6 +118,7 @@ class BoostInvoice:
                     podcast_guid=invoice.podcast_value.podcast_guid,
                     receiver_name=destination.name,
                     sender_name=sender_name,
+                    sender_app_name=sender_app_name,
                 )
             )
 
