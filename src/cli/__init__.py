@@ -198,6 +198,7 @@ def boost(ctx, feed_url, amount, message, sender_name):
 
     if podcast_value is None:
         click.echo("No Value Block")
+        exit(1)
 
     click.echo(
         tabulate(
@@ -219,6 +220,7 @@ def boost(ctx, feed_url, amount, message, sender_name):
         podcast_value=podcast_value,
         message=message,
         sender_name=sender_name,
+        sender_app_name="BoostCLI",
     )
 
     click.echo(

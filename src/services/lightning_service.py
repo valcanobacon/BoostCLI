@@ -174,6 +174,7 @@ class LightningService:
         def value_to_record(value: ValueForValue):
             value = {
                 "action": "boost" if value.boost else None,
+                "app_name": value.sender_app_name,
                 "sender_name": value.sender_name,
                 "sender_id": value.sender_id,
                 "sender_key": value.sender_key,
