@@ -33,17 +33,19 @@ Enter your password when prompted and leave the terminal open.  Switch to a new 
 
 ### Terminal #2
 
-#### Get Macacroon and TLS Certificate
+#### Get Macaroon and TLS Certificate
 
-Get the `readonly.macroon` and `tls.cert` from your node
+Get the `readonly.macaroon` and `tls.cert` from your node
 
-* SSH into Node, replace `192.168.1.100` with the IP Address of your node. 
+* SSH into Node, replace `192.168.1.100` with the IP Address of your node.  
+
     ```sh
     ssh admin@192.168.1.100 
     ```
+
 * In Raspiblitz CONNECT -> EXPORT -> scp and following the instructions
 
-#### Install Dependencies 
+#### Install Dependencies
 
 This should be done in the directory that contains this project.
 
@@ -53,14 +55,16 @@ pip install -e .
 ```
 
 #### Read the docs
+
 ```sh
-boostaccount --help
-boostaccount boosts-received-list --help
+boostcli --help
+boostcli boosts-received-list --help
 ```
 
 #### Run Command
+
 ```sh
-boostaccount --tlscert tls.cert --macaroon readonly.macaroon --address 127.0.0.1 --port 10009 boosts-received-list --datetime-range-end 2021-10-26
+boostcli --tlscert tls.cert --macaroon readonly.macaroon --address 127.0.0.1 --port 10009 boosts-received-list --datetime-range-end 2021-10-26
 ```
 
 ```
@@ -107,7 +111,7 @@ curl -o src/router.proto -s https://raw.githubusercontent.com/lightningnetwork/l
 
 ## Sending a Boostagram with lncli
 
-```
+```sh
 PUBKEY="03ecb3ee55ba6324d40bea174de096dc9134cb35d990235723b37ae9b5c49f4f53"
 VALUE=69
 MVALUE=$(expr $VALUE \* 1000)
