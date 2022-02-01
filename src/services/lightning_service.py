@@ -205,6 +205,10 @@ class LightningService:
                     (5482373484, secret),
                     (7629169, value_to_record(destination)),
                 ]
+                if destination.custom_key and destination.custom_value:
+                    custom_records.append(
+                        (destination.custom_key, destination.custom_value)
+                    )
                 dest = codecs.decode(destination.receiver_address, "hex")
                 request = ln.SendRequest(
                     dest=dest,

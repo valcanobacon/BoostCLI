@@ -10,6 +10,8 @@ class PodcastValueDestination:
     address: str
     name: Optional[str] = None
     fee: bool = False
+    custom_key: Optional[int] = None
+    custom_value: Optional[bytes] = None
 
 
 @dataclass
@@ -48,6 +50,8 @@ class ValueForValue:
     sender_app_name: Optional[str] = None
     sender_app_version: Optional[str] = None
     timestamp: Optional[int] = None
+    custom_key: Optional[int] = None
+    custom_value: Optional[bytes] = None
 
 
 @dataclass
@@ -93,6 +97,8 @@ class BoostInvoice:
                     episode_title=invoice.podcast_value.episode_title,
                     receiver_name=destination.name,
                     sender_app_name=sender_app_name,
+                    custom_key=destination.custom_key,
+                    custom_value=destination.custom_value,
                 )
             )
 
@@ -126,6 +132,8 @@ class BoostInvoice:
                     receiver_name=destination.name,
                     sender_name=sender_name,
                     sender_app_name=sender_app_name,
+                    custom_key=destination.custom_key,
+                    custom_value=destination.custom_value,
                 )
             )
 

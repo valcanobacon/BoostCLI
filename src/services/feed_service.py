@@ -56,12 +56,20 @@ class FeedService:
                     continue
                 if destination["type"] not in ["node"]:
                     continue
+                custom_key = destination.get("customkey")
+                if custom_key is not None:
+                    custom_key = int(custom_key)
+                custom_value = destination.get("customvalue")
+                if custom_value:
+                    custom_value = custom_value.encode("utf8")
                 podcast_value.destinations.append(
                     PodcastValueDestination(
                         address=destination["address"],
                         split=int(destination["split"]),
                         fee=bool(destination.get("fee", False)),
                         name=destination.get("name"),
+                        custom_key=custom_key,
+                        custom_value=custom_value,
                     )
                 )
         except (KeyError, ValueError):
