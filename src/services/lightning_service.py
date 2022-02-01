@@ -193,7 +193,6 @@ class LightningService:
 
             value = json.dumps({k: v for k, v in value.items() if v is not None})
             value = value.encode("utf8")
-            value = base64.b64encode(value)
             return value
 
         def request_generator(invoice: BoostInvoice):
