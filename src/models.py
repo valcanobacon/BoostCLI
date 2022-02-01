@@ -21,6 +21,8 @@ class PodcastValue:
     podcast_guid: Optional[str] = None
     podcast_index_feed_id: Optional[int] = None
     podcast_index_item_id: Optional[int] = None
+    episode_title: Optional[str] = None
+    episode_guid: Optional[str] = None
 
 
 @dataclass
@@ -87,6 +89,8 @@ class BoostInvoice:
                     podcast_url=invoice.podcast_value.podcast_url,
                     podcast_index_item_id=invoice.podcast_value.podcast_index_item_id,
                     podcast_guid=invoice.podcast_value.podcast_guid,
+                    episode_guid=invoice.podcast_value.episode_guid,
+                    episode_title=invoice.podcast_value.episode_title,
                     receiver_name=destination.name,
                     sender_app_name=sender_app_name,
                 )
@@ -114,8 +118,11 @@ class BoostInvoice:
                     message=message,
                     podcast_title=invoice.podcast_value.podcast_title,
                     podcast_url=invoice.podcast_value.podcast_url,
+                    podcast_index_feed_id=invoice.podcast_value.podcast_index_feed_id,
                     podcast_index_item_id=invoice.podcast_value.podcast_index_item_id,
                     podcast_guid=invoice.podcast_value.podcast_guid,
+                    episode_guid=invoice.podcast_value.episode_guid,
+                    episode_title=invoice.podcast_value.episode_title,
                     receiver_name=destination.name,
                     sender_name=sender_name,
                     sender_app_name=sender_app_name,
