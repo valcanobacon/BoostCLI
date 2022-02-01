@@ -189,6 +189,7 @@ class LightningService:
                 "feedID": value.podcast_index_feed_id,
                 "itemID": value.podcast_index_item_id,
                 "ts": value.timestamp,
+                "value_msat_total": value.amount_msats_total,
             }
 
             value = json.dumps({k: v for k, v in value.items() if v is not None})
