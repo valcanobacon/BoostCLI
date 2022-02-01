@@ -183,6 +183,7 @@ class LightningService:
                 "name": value.receiver_name,
                 "message": value.message,
                 "podcast": value.podcast_title,
+                "guid": value.podcast_guid,
                 "url": value.podcast_url,
                 "episode": value.episode_title,
                 "episode_guid": value.episode_guid,
