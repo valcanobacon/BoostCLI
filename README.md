@@ -120,6 +120,6 @@ MESSAGE="Test Message from lncli!"
 RECEIVER_NAME="Podcaster"
 APP_NAME="lncli"
 DATA="{\"action\":\"boost\",\"value_msat_total\":\"$MVALUE\",\"app_name\":\"$APP_NAME\",\"sender_name\": \"$SENDER_NAME\",\"name\":\"$RECEIVER_NAME\",\"message\":\"$MESSAGE\"}"
-RECORD=`echo $DATA |  od -A n -t x1 | sed 's/ *//g' | tr -d '\n'`
+RECORD=`echo $DATA |  od -A n -t x1 | sed -z 's/[ \n]*//g'`
 lncli sendpayment --dest=$PUBKEY --amt=$VALUE --keysend --data 7629169=$RECORD
 ```
