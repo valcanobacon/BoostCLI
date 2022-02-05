@@ -179,7 +179,7 @@ def podcast(ctx, feed_url):
 @click.argument("amount", type=click.IntRange(0))
 @click.argument("feed-url")
 @click.option("--message")
-@click.option("--sender-name")
+@click.option("--sender-name", prompt=True)
 def boost(ctx, feed_url, amount, message, sender_name):
     feed_service: FeedService = ctx.obj["feed_service"]
     podcast_index_service: Optional[PodcastIndexService] = ctx.obj.get(
