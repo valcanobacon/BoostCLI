@@ -10,10 +10,44 @@ class PodcastIndexService:
 
     provider: PodcastIndexProvider
 
-    def podcast_value(self, feed_url) -> Optional[PodcastValue]:
+    def get_podcast(self, id_key):
+
         try:
-            response = self.provider.podcasts_byfeedurl(feed_url)
+            print("Searching by Feed URL")
+            response = self.provider.podcasts_byfeedurl(id_key)
         except PodcastIndexError:
+            pass
+        else:
+            return response
+
+        try:
+            print("Searching by Feed ID")
+            response = self.provider.podcasts_byfeedid(id_key)
+        except PodcastIndexError:
+            pass
+        else:
+            return response
+
+        try:
+            print("Searching by GUID")
+            response = self.provider.podcasts_byguid(id_key)
+        except PodcastIndexError:
+            pass
+        else:
+            return response
+
+        try:
+            print("Searching by Itunes ID")
+            response = self.provider.podcasts_byitunesid(id_key)
+        except PodcastIndexError:
+            pass
+        else:
+            return response
+
+    def podcast_value(self, feed_url) -> Optional[PodcastValue]:
+
+        response = self.get_podcast(feed_url)
+        if response is None:
             return
 
         data = response.data
@@ -28,7 +62,7 @@ class PodcastIndexService:
             podcast_title = data["feed"].get("title")
             podcast_guid = data["feed"].get("podcastGuid")
             podcast_index_feed_id = data["feed"].get("id")
-        except KeyError:
+        except (KeyError, TypeError):
             return
 
         podcast_value = PodcastValue(

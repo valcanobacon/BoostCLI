@@ -14,7 +14,10 @@ class FeedService:
     provider: FeedProvider = FeedProvider()
 
     def podcast_value(self, feed_url) -> Optional[PodcastValue]:
-        response = self.provider.request(feed_url)
+        try:
+            response = self.provider.request(feed_url)
+        except:
+            return
 
         podcast_guid = None
         soup = response.data.find("podcast:guid")
