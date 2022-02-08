@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="BoostCLI",
-    version="0.1.0",
+    version="0.1.1",
     python_requires=">=3.9",
     description="Boost CLI",
     author_email="boostaccount.w0v3n@aleeas.com",
@@ -25,6 +25,7 @@ setup(
         "protobuf<4,>=3.19.1",
         "requests<3,>=2.27.1",
         "tabulate<1,>=0.8.9",
+        "tqdm<5,>=4.62.3",
     ],
     extras_require={
         "tests": ["pytest>=6.2.5,<7"],

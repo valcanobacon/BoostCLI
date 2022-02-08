@@ -5,6 +5,10 @@
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
     "cSpell.words": [
+        "byfeedid",
+        "byfeedurl",
+        "byguid",
+        "byitunesid",
         "tablefmt"
     ]
 }

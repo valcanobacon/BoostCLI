@@ -1,24 +1,17 @@
-import base64
 import codecs
-import hashlib
-import json
 import os
-import secrets
-import time
 from dataclasses import dataclass
-from datetime import datetime
 from re import T
 from typing import Any, List, Optional
 
 import click
+import tqdm
 from google.protobuf.json_format import MessageToJson
 from tabulate import tabulate
 
 from src.models import BoostInvoice, ValueForValue
 from src.services.feed_service import FeedService
 
-from ..lnd import lightning_pb2 as ln
-from ..lnd import lightning_pb2_grpc as lnrpc
 from ..providers.lightning_provider import channel_from, lightningProvider
 from ..providers.podcast_index_provider import PodcastIndexProvider
 from ..services.lightning_service import LightningService
@@ -254,7 +247,12 @@ def boost(ctx, feed_url, amount, message, sender_name):
 
     table = []
     payments = lighting_service.pay_boost_invoice(boost_invoice)
-    with click.progressbar(payments, length=len(podcast_value.destinations)) as bar:
+    with tqdm.tqdm(
+        payments,
+        total=len(podcast_value.destinations),
+        leave=False,
+        bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt}",
+    ) as bar:
         for payment in bar:
             table.append(
                 [
