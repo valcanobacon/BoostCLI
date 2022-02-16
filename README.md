@@ -97,18 +97,6 @@ source venv/bin/activate
 deactivate
 ```
 
-## Generating Lightning GRPC files
-
-This has already been done and the results are commited. This might become build step in the future.
-
-```sh
-curl -o src/lightning.proto -s https://raw.githubusercontent.com/lightningnetwork/lnd/master/lnrpc/lightning.proto
-python -m grpc_tools.protoc --proto_path=src --python_out=src --grpc_python_out=src lightning.proto
-
-curl -o src/router.proto -s https://raw.githubusercontent.com/lightningnetwork/lnd/master/lnrpc/routerrpc/router.proto
-
-```
-
 ## Sending a Boostagram with lncli
 
 ```sh
@@ -122,4 +110,10 @@ APP_NAME="lncli"
 DATA="{\"action\":\"boost\",\"value_msat_total\":\"$MVALUE\",\"app_name\":\"$APP_NAME\",\"sender_name\": \"$SENDER_NAME\",\"name\":\"$RECEIVER_NAME\",\"message\":\"$MESSAGE\"}"
 RECORD=`echo $DATA |  od -A n -t x1 | sed -z 's/[ \n]*//g'`
 lncli sendpayment --dest=$PUBKEY --amt=$VALUE --keysend --data 7629169=$RECORD
+```
+
+## Receive Boostagrams with lncli
+
+```
+for x in $(lncli listinvoices | jq '.invoices[].htlcs[0].custom_records."7629169"'); do echo $x | sed 's/"//g' | xxd -r -p; done
 ```

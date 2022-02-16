@@ -5,23 +5,35 @@ import itertools
 import json
 import secrets
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Generator
+from typing import Any, Generator, Optional
 
 import grpc
 from google.protobuf.json_format import MessageToJson
+from lndgrpc import LNDClient
 
-from src.lnd import lightning_pb2 as ln
-from src.lnd import lightning_pb2_grpc as lnrpc
 from src.models import BoostInvoice, ValueForValue
-from src.providers.lightning_provider import lightningProvider
+
+
+def client_from(
+    host: str, port: str, cert_filepath: str, macaroon_filepath: str
+) -> grpc.Channel:
+    return LNDClient(
+        ip_address=f"{host}:{port}",
+        cert_filepath=cert_filepath,
+        macaroon_filepath=macaroon_filepath,
+    )
 
 
 @dataclass(frozen=True)
 class LightningService:
 
-    provider: lightningProvider
+    client: LNDClient
+
+    @classmethod
+    def from_client(cls, client: LNDClient) -> "LightningService":
+        return LightningService(client=client)
 
     def parse_grpc_message(self, grpc_message) -> Any:
         return json.loads(MessageToJson(grpc_message))
@@ -31,16 +43,15 @@ class LightningService:
         index_offset=0,
         max_number_of_invoices=None,
         accending=True,
+        pending_only=False,
     ) -> Generator:
 
-        request = ln.ListInvoiceRequest(
-            pending_only=False,
+        response = self.client.list_invoices(
             index_offset=index_offset,
             num_max_invoices=max_number_of_invoices,
             reversed=accending,
+            pending_only=pending_only,
         )
-
-        response = self.provider.lightning_stub.ListInvoices(request)
 
         invoices = self.parse_grpc_message(response)["invoices"]
 
@@ -49,52 +60,11 @@ class LightningService:
 
         yield from invoices
 
-    def invoices_watch(
-        self,
-        index_offset=0,
-        seconds_between_batches: int = 3,
-    ):
-
-        last_index_offset = index_offset
-
-        while True:
-
-            invoices = list(
-                self.invoices(index_offset=last_index_offset, accending=True)
-            )
-
-            if not invoices:
-                time.sleep(seconds_between_batches)
-                continue
-
-            yield from invoices
-
-            last_index_offset += len(invoices)
-
-            time.sleep(seconds_between_batches)
-
-    def watch_value_received(
-        self,
-        index_offset=0,
-        seconds_between_batches: int = 3,
-    ):
-        last_index_offset = index_offset
-
-        while True:
-
-            values = list(
-                self.value_received(index_offset=last_index_offset, accending=True)
-            )
-
-            if not values:
-                time.sleep(seconds_between_batches)
-                continue
-
-            yield from values
-
-            last_index_offset += len(values)
-
-            time.sleep(seconds_between_batches)
+    def watch_value_received(self):
+        for invoice in self.client.subscribe_invoices():
+            value = self.invoice_to_value(invoice)
+            if value is not None:
+                yield value
 
     def value_received(
         self,
@@ -103,72 +73,70 @@ class LightningService:
         accending=True,
     ) -> Generator:
 
-        request = ln.ListInvoiceRequest(
-            pending_only=False,
+        invoices = self.invoices(
             index_offset=index_offset,
-            num_max_invoices=max_number_of_invoices,
-            reversed=accending,
+            max_number_of_invoices=max_number_of_invoices,
+            accending=accending,
+            pending_only=False,
         )
 
-        response = self.provider.lightning_stub.ListInvoices(request)
-
-        invoices = self.parse_grpc_message(response)["invoices"]
-
-        if not accending:
-            invoices = reversed(invoices)
-
         for invoice in invoices:
-            if invoice["state"] != "SETTLED":
-                continue
+            value = self.invoice_to_value(invoice)
+            if value is not None:
+                yield value
 
-            tlv = invoice["htlcs"][0]
-            custom_records = parse_custom_records(tlv.get("customRecords", {}))
+    def invoice_to_value(self, invoice) -> Optional[ValueForValue]:
+        if invoice["state"] != "SETTLED":
+            return
 
-            if "podcastindex_records_v2" in custom_records:
-                record = custom_records["posdcastindex_records_v2"]
+        tlv = invoice["htlcs"][0]
+        custom_records = parse_custom_records(tlv.get("customRecords", {}))
 
-            elif "podcastindex_records_v1" in custom_records:
-                record = custom_records["podcastindex_records_v1"]
+        if "podcastindex_records_v2" in custom_records:
+            record = custom_records["posdcastindex_records_v2"]
 
-                timestamp = None
-                try:
-                    if "ts" in record:
-                        timestamp = int(record["ts"])
-                    elif "time" in record:
-                        struct_time = time.strptime(record["time"], "%H:%M:%S")
-                        timestamp = (
-                            struct_time.tm_hour * 60 * 60
-                            + struct_time.tm_min * 60
-                            + struct_time.tm_sec
-                        )
-                except TypeError:
-                    pass
+        elif "podcastindex_records_v1" in custom_records:
+            record = custom_records["podcastindex_records_v1"]
 
-                amount_msats_total = None
-                if "value_msat_total" in record:
-                    amount_msats_total = int(record["value_msat_total"])
+            timestamp = None
+            try:
+                if "ts" in record:
+                    timestamp = int(record["ts"])
+                elif "time" in record:
+                    struct_time = time.strptime(record["time"], "%H:%M:%S")
+                    timestamp = (
+                        struct_time.tm_hour * 60 * 60
+                        + struct_time.tm_min * 60
+                        + struct_time.tm_sec
+                    )
+            except TypeError:
+                pass
 
-                yield ValueForValue(
-                    creation_date=datetime.fromtimestamp(int(invoice["creationDate"])),
-                    amount_msats=int(invoice["valueMsat"]),
-                    amount_msats_total=amount_msats_total,
-                    boost=record.get("action") == "boost",
-                    sender_name=record.get("sender_name"),
-                    sender_id=record.get("sender_id"),
-                    sender_key=record.get("sender_key"),
-                    sender_app_name=record.get("app_name"),
-                    sender_app_version=record.get("app_version"),
-                    receiver_name=record.get("name"),
-                    message=record.get("message"),
-                    podcast_title=record.get("podcast"),
-                    podcast_url=record.get("url"),
-                    podcast_guid=record.get("guid"),
-                    episode_title=record.get("episode"),
-                    episode_guid=record.get("episode_guid"),
-                    podcast_index_feed_id=record.get("feedID"),
-                    podcast_index_item_id=record.get("itemID"),
-                    timestamp=timestamp,
-                )
+            amount_msats_total = None
+            if "value_msat_total" in record:
+                amount_msats_total = int(record["value_msat_total"])
+
+            return ValueForValue(
+                creation_date=datetime.fromtimestamp(int(invoice["creationDate"])),
+                amount_msats=int(invoice["valueMsat"]),
+                amount_msats_total=amount_msats_total,
+                boost=record.get("action") == "boost",
+                sender_name=record.get("sender_name"),
+                sender_id=record.get("sender_id"),
+                sender_key=record.get("sender_key"),
+                sender_app_name=record.get("app_name"),
+                sender_app_version=record.get("app_version"),
+                receiver_name=record.get("name"),
+                message=record.get("message"),
+                podcast_title=record.get("podcast"),
+                podcast_url=record.get("url"),
+                podcast_guid=record.get("guid"),
+                episode_title=record.get("episode"),
+                episode_guid=record.get("episode_guid"),
+                podcast_index_feed_id=record.get("feedID"),
+                podcast_index_item_id=record.get("itemID"),
+                timestamp=timestamp,
+            )
 
     def pay_boost_invoice(self, invoice: BoostInvoice):
         def value_to_record(value: ValueForValue):
@@ -197,31 +165,30 @@ class LightningService:
             value = value.encode("utf8")
             return value
 
-        def request_generator(invoice: BoostInvoice):
-            for destination in itertools.chain(invoice.payments, invoice.fees):
-                secret = secrets.token_bytes(32)
-                hashed_secret = hashlib.sha256(secret).hexdigest()
-                custom_records = [
-                    (5482373484, secret),
-                    (7629169, value_to_record(destination)),
-                ]
-                if destination.custom_key and destination.custom_value:
-                    custom_records.append(
-                        (destination.custom_key, destination.custom_value)
-                    )
-                dest = codecs.decode(destination.receiver_address, "hex")
-                request = ln.SendRequest(
-                    dest=dest,
-                    amt_msat=destination.amount_msats,
-                    dest_custom_records=custom_records,
-                    payment_hash=bytes.fromhex(hashed_secret),
-                    allow_self_payment=True,
+        for destination in itertools.chain(invoice.payments, invoice.fees):
+            secret = secrets.token_bytes(32)
+            hashed_secret = hashlib.sha256(secret).hexdigest()
+            custom_records = [
+                (5482373484, secret),
+                (7629169, value_to_record(destination)),
+            ]
+            if destination.custom_key and destination.custom_value:
+                custom_records.append(
+                    (destination.custom_key, destination.custom_value)
                 )
-                yield request
 
-        request_iterable = request_generator(invoice)
-        for payment in self.provider.lightning_stub.SendPayment(request_iterable):
-            yield payment
+            dest = codecs.decode(destination.receiver_address, "hex")
+
+            response = self.client.send_payment(
+                payment_request=None,
+                fee_limit_msat=int(destination.amount_msats * 0.10),
+                dest=dest,
+                amt_msat=destination.amount_msats,
+                dest_custom_records=custom_records,
+                payment_hash=bytes.fromhex(hashed_secret),
+                allow_self_payment=True,
+            )
+            yield response
 
 
 def try_to_json_decode(value: str) -> Any:
