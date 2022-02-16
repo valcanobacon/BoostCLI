@@ -8,7 +8,7 @@ setup(
     version="0.1.1",
     python_requires=">=3.9",
     description="Boost CLI",
-    author_email="boostaccount.w0v3n@aleeas.com",
+    author_email="boostcli.v1pty@slmail.me",
     packages=find_packages(include=["src", "src.*"]),
     entry_points={
         "console_scripts": [
@@ -16,6 +16,7 @@ setup(
         ],
     },
     install_requires=[
+        "lnd-grpc-client<1,>=0.3.39",
         "click<9,>=8.0.3",
         "beautifulsoup4<5,>=4.10.0",
         "lxml<5,>=4.7.1",

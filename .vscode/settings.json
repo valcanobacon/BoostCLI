@@ -5,10 +5,23 @@
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
     "cSpell.words": [
+        "Boostagram",
+        "Boostagrams",
+        "boostcli",
         "byfeedid",
         "byfeedurl",
         "byguid",
         "byitunesid",
-        "tablefmt"
+        "htlcs",
+        "lncli",
+        "lndgrpc",
+        "msat",
+        "msats",
+        "posdcastindex",
+        "protobuf",
+        "Raspiblitz",
+        "setuptools",
+        "tablefmt",
+        "venv"
     ]
 }

@@ -12,9 +12,9 @@ from tabulate import tabulate
 from src.models import BoostInvoice, ValueForValue
 from src.services.feed_service import FeedService
 
-from ..providers.lightning_provider import channel_from, lightningProvider
 from ..providers.podcast_index_provider import PodcastIndexProvider
 from ..services.lightning_service import LightningService
+from ..services.lightning_service import client_from as lightning_client_from
 from ..services.podcast_index_service import PodcastIndexService
 
 
@@ -35,13 +35,11 @@ def cli(ctx, **kwargs):
     os.environ["GRPC_SSL_CIPHER_SUITES"] = "HIGH+ECDSA"
 
     ctx.obj["lightning_service"] = LightningService(
-        provider=lightningProvider.from_channel(
-            channel_from(
-                host=kwargs["address"],
-                port=kwargs["port"],
-                cert=read_tlscert(filename=kwargs["tlscert"]),
-                macaroon=read_macaroon(filename=kwargs["macaroon"]),
-            )
+        client=lightning_client_from(
+            host=kwargs["address"],
+            port=kwargs["port"],
+            cert_filepath=kwargs["tlscert"],
+            macaroon_filepath=kwargs["macaroon"],
         )
     )
 
@@ -81,22 +79,11 @@ def boosts_received_list(ctx, **kwargs):
 
 
 @cli.command()
-@click.option("--datetime-range-end", type=click.DateTime())
-@click.option("--show-chats/--no-show-chats", default=True)
-@click.option("--show-boots/--no-show-boots", default=True)
-@click.option("--show-streamed/--no-show-streamed", default=True)
-@click.option("--show-sphinx/--no-show-sphinx", default=True)
-@click.option("--show-other/--no-show-other", default=False)
-@click.option("--max-number-of-invoices", type=click.IntRange(0), default=100)
-@click.option("--index-offset", type=click.IntRange(0), default=0)
-@click.option("--sleep-time", type=click.IntRange(1), default=1)
 @click.pass_context
 def boosts_received_watch(ctx, **kwargs):
     lighting_service: LightningService = ctx.obj["lightning_service"]
 
-    for invoice in lighting_service.watch_value_received(
-        index_offset=kwargs["index_offset"],
-    ):
+    for invoice in lighting_service.watch_value_received():
         print_value(invoice)
 
 
