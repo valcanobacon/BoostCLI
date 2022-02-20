@@ -38,6 +38,8 @@ FEED_WITH_LIVE_VALUE: Final = """
         </podcast:value>
     </podcast:liveitem>
     <podcast:liveitem status="live">
+        <title>Live!</title>
+        <guid>123</guid>
         <podcast:value type="lightning" method="keysend" suggested="0.00001000000">
             <podcast:valueRecipient name="Adam" type="node" address="abc" split="33"/>
             <podcast:valueRecipient name="Dave" type="node" address="cba" split="33"/>
@@ -93,6 +95,8 @@ def podcast_value_with_live_value():
     return PodcastValue(
         suggested="0.00001000000",
         podcast_url=sentinel.feed_url,
+        episode_title="Live!",
+        episode_guid="123",
         destinations=[
             PodcastValueDestination(
                 name="Adam",
