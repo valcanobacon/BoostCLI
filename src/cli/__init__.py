@@ -120,9 +120,11 @@ def find_podcast_value(
     ]
 
     with console.status("By Feed URL") as status:
-        podcast_value = feed_service.podcast_value(search_term)
+        pv = feed_service.podcast_value(search_term)
+        if pv:
+            return pv
 
-        if podcast_value is None and pi_service is not None:
+        if pi_service is not None:
             for search_type, message in pi_search_settings:
                 status.update(message)
                 pv = pi_service.podcast_value(search_type, search_term)
