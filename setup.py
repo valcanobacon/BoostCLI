@@ -27,6 +27,7 @@ setup(
         "requests<3,>=2.27.1",
         "tabulate<1,>=0.8.9",
         "tqdm<5,>=4.62.3",
+        "rich<12,>=11.2.0",
     ],
     extras_require={
         "tests": ["pytest>=6.2.5,<7"],
