@@ -21,20 +21,22 @@ class FeedService:
 
         podcast_guid = None
         soup = response.data.find("podcast:guid")
-        if soup is not None:
+        if soup:
             podcast_guid = soup.text
 
         podcast_title = None
-        soup = response.data.find("title")
-        if soup is not None:
+        soup = response.data.find("title", recursive=False)
+        if soup:
             podcast_title = soup.text
 
         podcast_value_soup = None
+        podcast_liveitem_soup = None
 
         podcast_liveitems = response.data.find_all(
             "podcast:liveitem", recursive=True, attrs={"status": "live"}
         )
         for soup in podcast_liveitems:
+            podcast_liveitem_soup = soup
             podcast_value_soup = next(
                 iter(soup.find_all("podcast:value")),
                 None,
@@ -42,13 +44,14 @@ class FeedService:
             if podcast_value_soup:
                 break
 
-        if podcast_value_soup is None:
+        if not podcast_value_soup:
+            podcast_liveitem_soup = None
             podcast_value_soup = next(
                 iter(response.data.find_all("podcast:value", recursive=True)),
                 None,
             )
 
-        if podcast_value_soup is None:
+        if not podcast_value_soup:
             return
 
         try:
@@ -60,10 +63,24 @@ class FeedService:
         except KeyError:
             return
 
+        episode_title = None
+        episode_guid = None
+
+        if podcast_liveitem_soup:
+            soup = podcast_liveitem_soup.find("title")
+            if soup:
+                episode_title = soup.text
+
+            soup = podcast_liveitem_soup.find("guid")
+            if soup:
+                episode_guid = soup.text
+
         podcast_value = PodcastValue(
             podcast_url=feed_url,
             podcast_title=podcast_title,
             podcast_guid=podcast_guid,
+            episode_title=episode_title,
+            episode_guid=episode_guid,
             suggested=suggested,
             destinations=[],
         )
@@ -72,7 +89,7 @@ class FeedService:
             for destination in podcast_value_soup.children:
                 if not isinstance(destination, Tag):
                     continue
-                if destination["type"] not in ["node"]:
+                if destination.get("type", "node") not in ["node"]:
                     continue
                 custom_key = destination.get("customkey")
                 if custom_key is not None:
@@ -92,5 +109,8 @@ class FeedService:
                 )
         except (KeyError, ValueError):
             pass
+
+        if not podcast_value.destinations:
+            return
 
         return podcast_value
