@@ -188,6 +188,8 @@ class LightningService:
                 payment_hash=bytes.fromhex(hashed_secret),
                 allow_self_payment=True,
             )
+            if not response:
+                continue
             yield response
 
 

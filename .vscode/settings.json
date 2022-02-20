@@ -20,6 +20,7 @@
         "posdcastindex",
         "protobuf",
         "Raspiblitz",
+        "secho",
         "setuptools",
         "tablefmt",
         "venv"
