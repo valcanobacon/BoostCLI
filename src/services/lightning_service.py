@@ -160,7 +160,6 @@ class LightningService:
                 "ts": value.timestamp,
                 "value_msat_total": value.amount_msats_total,
             }
-
             value = json.dumps({k: v for k, v in value.items() if v is not None})
             value = value.encode("utf8")
             return value

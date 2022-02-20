@@ -1,8 +1,16 @@
 from dataclasses import dataclass
+from enum import Enum
 from typing import Optional
 
 from ..models import PodcastValue, PodcastValueDestination
 from ..providers.podcast_index_provider import PodcastIndexError, PodcastIndexProvider
+
+
+class SearchType:
+    FEED_URL = 1
+    FEED_ID = 2
+    GUID = 2
+    ITUNES_ID = 3
 
 
 @dataclass(frozen=True)
@@ -10,43 +18,32 @@ class PodcastIndexService:
 
     provider: PodcastIndexProvider
 
-    def get_podcast(self, id_key):
+    def get_podcast(self, type_: SearchType, value: str):
 
         try:
-            print("Searching by Feed URL")
-            response = self.provider.podcasts_byfeedurl(id_key)
+            if type_ == SearchType.FEED_URL:
+                response = self.provider.podcasts_byfeedurl(value)
+
+            elif type_ == SearchType.FEED_ID:
+                response = self.provider.podcasts_byfeedid(value)
+
+            elif type_ == SearchType.GUID:
+                response = self.provider.podcasts_byguid(value)
+
+            elif type_ == SearchType.ITUNES_ID:
+                response = self.provider.podcasts_byitunesid(value)
+
         except PodcastIndexError:
             pass
+
         else:
             return response
 
-        try:
-            print("Searching by Feed ID")
-            response = self.provider.podcasts_byfeedid(id_key)
-        except PodcastIndexError:
-            pass
-        else:
-            return response
+    def podcast_value(
+        self, search_type: SearchType, value: str
+    ) -> Optional[PodcastValue]:
 
-        try:
-            print("Searching by GUID")
-            response = self.provider.podcasts_byguid(id_key)
-        except PodcastIndexError:
-            pass
-        else:
-            return response
-
-        try:
-            print("Searching by Itunes ID")
-            response = self.provider.podcasts_byitunesid(id_key)
-        except PodcastIndexError:
-            pass
-        else:
-            return response
-
-    def podcast_value(self, feed_url) -> Optional[PodcastValue]:
-
-        response = self.get_podcast(feed_url)
+        response = self.get_podcast(search_type, value)
         if response is None:
             return
 
@@ -59,6 +56,7 @@ class PodcastIndexService:
             if model["method"] not in ["keysend"]:
                 return
             suggested = model.get("suggested")
+            feed_url = data["feed"]["url"]
             podcast_title = data["feed"].get("title")
             podcast_guid = data["feed"].get("podcastGuid")
             podcast_index_feed_id = data["feed"].get("id")
