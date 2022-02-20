@@ -1,21 +1,25 @@
 import codecs
 import os
 from dataclasses import dataclass
+from posixpath import split
 from re import T
 from typing import Any, List, Optional
 
 import click
+import rich
 import tqdm
 from google.protobuf.json_format import MessageToJson
 from tabulate import tabulate
 
-from src.models import BoostInvoice, ValueForValue
+from src.models import BoostInvoice, PodcastValueDestination, ValueForValue
 from src.services.feed_service import FeedService
 
 from ..providers.podcast_index_provider import PodcastIndexProvider
 from ..services.lightning_service import LightningService
 from ..services.lightning_service import client_from as lightning_client_from
 from ..services.podcast_index_service import PodcastIndexService
+
+APP_PUBKEY = "03d55f4d4c870577e98ac56605a54c5ed20c8897e41197a068fd61bdb580efaa67"
 
 
 @click.group()
@@ -90,7 +94,8 @@ def boosts_received_watch(ctx, **kwargs):
 @cli.command()
 @click.pass_context
 @click.argument("feed-url")
-def podcast(ctx, feed_url):
+@click.option("--support-app/--no-support-app", default=True)
+def podcast(ctx, feed_url, support_app):
     feed_service: FeedService = ctx.obj["feed_service"]
     podcast_index_service: Optional[PodcastIndexService] = ctx.obj.get(
         "podcast_index_service"
@@ -107,6 +112,16 @@ def podcast(ctx, feed_url):
     if podcast_value is None:
         click.echo("No Value Block")
         exit(1)
+
+    if support_app:
+        podcast_value.destinations.append(
+            PodcastValueDestination(
+                split=1,
+                address=APP_PUBKEY,
+                name="BoostCLI",
+                fee=True,
+            )
+        )
 
     click.echo(
         tabulate(
@@ -160,7 +175,8 @@ def podcast(ctx, feed_url):
 @click.argument("feed-url")
 @click.option("--message")
 @click.option("--sender-name", prompt=True)
-def boost(ctx, feed_url, amount, message, sender_name):
+@click.option("--support-app/--no-support-app", default=True)
+def boost(ctx, feed_url, amount, message, sender_name, support_app):
     feed_service: FeedService = ctx.obj["feed_service"]
     podcast_index_service: Optional[PodcastIndexService] = ctx.obj.get(
         "podcast_index_service"
@@ -179,6 +195,16 @@ def boost(ctx, feed_url, amount, message, sender_name):
     if podcast_value is None:
         click.echo("No Value Block")
         exit(1)
+
+    if support_app:
+        podcast_value.destinations.append(
+            PodcastValueDestination(
+                split=1,
+                address=APP_PUBKEY,
+                name="BoostCLI",
+                fee=True,
+            )
+        )
 
     click.echo(
         tabulate(
