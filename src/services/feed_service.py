@@ -29,10 +29,25 @@ class FeedService:
         if soup is not None:
             podcast_title = soup.text
 
-        podcast_value_soup = next(
-            iter(response.data.find_all("podcast:value", recursive=True, limit=True)),
-            None,
+        podcast_value_soup = None
+
+        podcast_liveitems = response.data.find_all(
+            "podcast:liveitem", recursive=True, attrs={"status": "live"}
         )
+        for soup in podcast_liveitems:
+            podcast_value_soup = next(
+                iter(soup.find_all("podcast:value")),
+                None,
+            )
+            if podcast_value_soup:
+                break
+
+        if podcast_value_soup is None:
+            podcast_value_soup = next(
+                iter(response.data.find_all("podcast:value", recursive=True)),
+                None,
+            )
+
         if podcast_value_soup is None:
             return
 
