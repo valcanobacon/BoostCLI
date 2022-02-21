@@ -20,6 +20,7 @@ class PodcastValue:
     suggested: Optional[str] = None
     podcast_url: Optional[str] = None
     podcast_title: Optional[str] = None
+    podcast_desc: Optional[str] = None
     podcast_guid: Optional[str] = None
     podcast_index_feed_id: Optional[int] = None
     podcast_index_item_id: Optional[int] = None

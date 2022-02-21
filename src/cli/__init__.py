@@ -1,5 +1,6 @@
 import codecs
 import os
+import textwrap
 from dataclasses import dataclass
 from posixpath import split
 from re import T
@@ -12,10 +13,13 @@ from google.protobuf.json_format import MessageToJson
 from rich import print
 from rich.columns import Columns
 from rich.console import Console
+from rich.emoji import Emoji
 from rich.panel import Panel
-from rich.progress import Progress
+from rich.progress import BarColumn, Progress, SpinnerColumn, TimeElapsedColumn
+from rich.prompt import Confirm, IntPrompt, Prompt
+from rich.rule import Rule
 from rich.table import Table
-from tabulate import tabulate
+from rich.text import Text
 
 from src.models import (
     BoostInvoice,
@@ -32,6 +36,17 @@ from ..services.podcast_index_service import PodcastIndexService, SearchType
 
 APP_PUBKEY = "03d55f4d4c870577e98ac56605a54c5ed20c8897e41197a068fd61bdb580efaa67"
 
+ASCII = "\n".join((
+    "         ,/",
+    "       ,'/",
+    "     ,' /",
+    "   ,'  /_____,",
+    " .'____    ,'",
+    "      /  ,'",
+    "     / ,'",
+    "    /,'",
+    "   /'",
+))
 
 @click.group()
 @click.option("--address", default="127.0.0.1")
@@ -83,26 +98,38 @@ def cli(ctx, **kwargs):
 @click.option("--max-number-of-invoices", type=click.IntRange(0), default=10000)
 @click.option("--index-offset", type=click.IntRange(0), default=0)
 @click.pass_context
-def boosts_received_list(ctx, **kwargs):
+def received_boosts(ctx, **kwargs):
+    console: Console = ctx.obj["console"]
+    console_error: Console = ctx.obj["console_error"]
     lighting_service: LightningService = ctx.obj["lightning_service"]
 
-    value_received = lighting_service.value_received(
-        index_offset=kwargs["index_offset"],
-        accending=kwargs["accending"],
-        max_number_of_invoices=kwargs["max_number_of_invoices"],
-    )
+    try:
+        value_received = lighting_service.value_received(
+            index_offset=kwargs["index_offset"],
+            accending=kwargs["accending"],
+            max_number_of_invoices=kwargs["max_number_of_invoices"],
+        )
 
-    for value in value_received:
-        print_value(value)
+        for value in value_received:
+            print_value(value, console)
+
+    except Exception as e:
+        console_error.log(e)
 
 
 @cli.command()
 @click.pass_context
-def boosts_received_watch(ctx, **kwargs):
+def incoming_boosts(ctx, **kwargs):
+    console: Console = ctx.obj["console"]
+    console_error: Console = ctx.obj["console_error"]
     lighting_service: LightningService = ctx.obj["lightning_service"]
 
-    for invoice in lighting_service.watch_value_received():
-        print_value(invoice)
+    with console.status("Listening..."):
+        try:
+            for invoice in lighting_service.watch_value_received():
+                print_value(invoice, console)
+        except Exception as e:
+            console_error.log(e)
 
 
 def find_podcast_value(
@@ -135,76 +162,9 @@ def find_podcast_value(
 @cli.command()
 @click.pass_context
 @click.argument("search_term")
-@click.option("--support-app/--no-support-app", default=True)
-def podcast(ctx, search_term, support_app):
-    console: Console = ctx.obj["console"]
-    console_error: Console = ctx.obj["console_error"]
-    feed_service: FeedService = ctx.obj["feed_service"]
-    pi_service: Optional[PodcastIndexService] = ctx.obj.get("podcast_index_service")
-
-    podcast_value = find_podcast_value(console, feed_service, pi_service, search_term)
-    if podcast_value is None:
-        console_error.print(":x: No Value Block")
-        exit(1)
-
-    if support_app:
-        podcast_value.destinations.append(
-            PodcastValueDestination(
-                split=1,
-                address=APP_PUBKEY,
-                name="BoostCLI",
-                fee=True,
-            )
-        )
-
-    podcast_panel = Panel(
-        "\n".join(
-            (
-                x
-                for x in (
-                    podcast_value.podcast_title,
-                    podcast_value.podcast_url,
-                    podcast_value.podcast_guid,
-                    podcast_value.podcast_index_feed_id
-                    and "https://podcastindex.org/podcast/{}".format(
-                        podcast_value.podcast_index_feed_id
-                    ),
-                )
-                if x
-            )
-        ),
-        title="Podcast",
-    )
-
-    grid = Table.grid(expand=True)
-    grid.add_column()
-    grid.add_column(justify="right")
-    for dest in podcast_value.destinations:
-        if dest.fee:
-            continue
-        grid.add_row(dest.name, f"{dest.split}%")
-
-    split_panel = Panel(grid, title="Split")
-
-    grid = Table.grid(expand=True)
-    grid.add_column()
-    grid.add_column(justify="right")
-    for dest in podcast_value.destinations:
-        if not dest.fee:
-            continue
-        grid.add_row(dest.name, f"{dest.split}%")
-
-    fee_panel = Panel(grid, title="Fee")
-
-    console.print(Columns([podcast_panel, split_panel, fee_panel], expand=True))
-
-
-@cli.command()
-@click.pass_context
-@click.argument("amount", type=click.IntRange(0))
-@click.argument("search_term")
+@click.option("--amount", type=click.IntRange(0))
 @click.option("--message")
-@click.option("--sender-name", prompt=True)
+@click.option("--sender-name")
 @click.option("--support-app/--no-support-app", default=True)
 def boost(ctx, search_term, amount, message, sender_name, support_app):
     console: Console = ctx.obj["console"]
@@ -213,16 +173,15 @@ def boost(ctx, search_term, amount, message, sender_name, support_app):
     pi_service: Optional[PodcastIndexService] = ctx.obj.get("podcast_index_service")
     lighting_service: LightningService = ctx.obj["lightning_service"]
 
-    podcast_value = find_podcast_value(console, feed_service, pi_service, search_term)
-    if podcast_value is None:
-        console_error.print(":x: No Value Block")
+    pv = find_podcast_value(console, feed_service, pi_service, search_term)
+    if pv is None:
+        console_error.print(
+            f':broken_heart: Failed to locate value by search_term="{search_term}"'
+        )
         exit(1)
 
-    if message is None:
-        message = click.edit()
-
     if support_app:
-        podcast_value.destinations.append(
+        pv.destinations.append(
             PodcastValueDestination(
                 split=1,
                 address=APP_PUBKEY,
@@ -231,50 +190,78 @@ def boost(ctx, search_term, amount, message, sender_name, support_app):
             )
         )
 
-    podcast_panel = Panel(
-        "\n".join(
-            (
-                x
-                for x in (
-                    podcast_value.podcast_title,
-                    podcast_value.podcast_url,
-                    podcast_value.podcast_guid,
-                    podcast_value.podcast_index_feed_id
-                    and "https://podcastindex.org/podcast/{}".format(
-                        podcast_value.podcast_index_feed_id
-                    ),
-                )
-                if x
-            )
-        ),
-        title="Podcast",
+    table_split = Table(
+        title=Text("Split", style="yellow"), box=None, show_header=False
     )
-
-    table = Table(expand=True, box=None, show_header=False)
-    table.add_column()
-    table.add_column(justify="right")
-    for dest in podcast_value.destinations:
+    table_split.add_column(style="yellow")
+    table_split.add_column(style="yellow")
+    table_split.add_column(justify="right", style="yellow")
+    for dest in pv.destinations:
         if dest.fee:
             continue
-        table.add_row(dest.name, f"{dest.split}%")
+        table_split.add_row(
+            dest.name, f"{dest.address[0:6]}...{dest.address[-7:-1]}", f"{dest.split}%"
+        )
 
-    split_panel = Panel(table, title="Split")
-
-    table = Table(expand=True, box=None, show_header=False)
-    table.add_column()
-    table.add_column(justify="right")
-    for dest in podcast_value.destinations:
+    table_fee = Table(
+        title=Text("Fees", style="red"), box=None, show_header=False, style="red"
+    )
+    table_fee.add_column(style="red")
+    table_fee.add_column(style="red")
+    table_fee.add_column(justify="right", style="red")
+    for dest in pv.destinations:
         if not dest.fee:
             continue
-        table.add_row(dest.name, f"{dest.split}%")
+        table_fee.add_row(
+            dest.name, f"{dest.address[0:6]}...{dest.address[-7:-1]}", f"{dest.split}%"
+        )
 
-    fee_panel = Panel(table, title="Fee")
+    metadata_text = Text()
+    if pv.podcast_title:
+        metadata_text.append(f"{pv.podcast_title}\n", style="bold yellow")
+    if pv.podcast_guid:
+        metadata_text.append(f"{pv.podcast_guid}\n")
+    if pv.podcast_url:
+        metadata_text.append(f"{pv.podcast_url}\n")
+    if pv.podcast_index_feed_id:
+        metadata_text.append(
+            f"https://podcastindex.org/podcast/{pv.podcast_index_feed_id}\n"
+        )
 
-    console.print(Columns([podcast_panel, split_panel, fee_panel], expand=True))
+    g = Table.grid()
+    g.add_column()
+    g.add_row(metadata_text)
+    g.add_row(Columns([table_split, table_fee]))
+    
+
+    ascii_text = Text(ASCII, style="bold yellow")
+
+    grid = Table.grid(padding=2)
+    grid.add_column()
+    grid.add_column()
+
+    grid.add_row(ascii_text, g)
+
+    console.print(Panel.fit(grid, title="Podcast", width=128))
+
+    if not message and sender_name and amount:
+        Prompt.ask("Push any key to continue", default=0, show_default=False)
+
+    if amount is None:
+        amount = IntPrompt.ask(Text("amount (sats)", style="bold yellow"))
+
+    if sender_name is None:
+        sender_name = Prompt.ask(
+            Text("Sender name:", "bold cyan"), default=0, show_default=False
+        )
+
+    if message is None:
+        message = click.edit("Write message... 300 characters max")
+        message = message[:300]
 
     boost_invoice = BoostInvoice.create(
         amount=amount * 1000,
-        podcast_value=podcast_value,
+        podcast_value=pv,
         message=message,
         sender_name=sender_name,
         sender_app_name="BoostCLI",
@@ -288,91 +275,124 @@ def boost(ctx, search_term, amount, message, sender_name, support_app):
     for value in boost_invoice.fees:
         table.add_row(value.receiver_name, format_msats(value.amount_msats))
 
-    invoice_panel = Panel(table, title="Invoice")
+    invoice_panel = Panel(table, title="Invoice", style="yellow")
+
+    boost_text = Text()
+    boost_text.append(sender_name)
+    boost_text.append("\n")
+    boost_text.append(
+        "{} sats".format(format_msats(boost_invoice.amount)), style="bold"
+    )
+    boost_text.append("\n")
+    boost_text.append(message, style="bold")
 
     boost_panel = Panel(
-        "\n".join(
-            (
-                x
-                for x in (
-                    sender_name,
-                    "BoostCLI",
-                    "{} sats".format(format_msats(boost_invoice.amount)),
-                    message,
-                )
-                if x
-            )
-        ),
+        boost_text,
         title="Boost",
+        style="cyan",
     )
 
-    console.print(Columns([invoice_panel, boost_panel], expand=True))
+    console.print(invoice_panel, width=128)
+    console.print(boost_panel, width=128)
 
-    if not click.confirm("Send?"):
+    if not Confirm.ask("Send?"):
         return
 
-    progress = Progress(auto_refresh=False, expand=True)
-    master_task = progress.add_task("overall", total=len(podcast_value.destinations))
+    progress = Progress(
+        SpinnerColumn(),
+        "[progress.description]{task.description}",
+        BarColumn(bar_width=128),
+        "[progress.percentage]{task.percentage:>3.0f}%",
+        TimeElapsedColumn(),
+    )
+    master_task = progress.add_task(pv.destinations[0].name, total=len(pv.destinations))
 
     with progress:
         payments = lighting_service.pay_boost_invoice(boost_invoice)
-        for index, payment in enumerate(payments):
+        for i, payment in enumerate(payments):
+            dest = pv.destinations[i]
+
+            progress.refresh()
+
             hash = payment.payment_hash.hex()
-            short_hash = f"{hash[0:8]}...{hash[-8:-1]}"
+            short_hash = f"{hash[0:6]}...{hash[-7:-1]}"
             fee = format_msats(payment.payment_route.total_fees_msat)
             total = format_msats(payment.payment_route.total_amt_msat)
             hops = len(payment.payment_route.hops)
 
-            if payment.payment_route.total_amt_msat:
-                status_icon = ":white_check_mark:"
+            if payment.payment_error:
+                status = f" :x: [bold yellow]{dest.name}[/bold yellow] {short_hash} [bold red]{payment.payment_error}[/bold red]"
             else:
-                status_icon = ":x:"
+                status = f" :white_check_mark: [bold yellow]{dest.name}[/bold yellow] {short_hash} fee={fee} total={total} hops={hops}"
 
-            progress.console.print(
-                f"{status_icon} {short_hash} fee={fee} total={total} hops={hops}"
-            )
+            progress.console.print(status)
 
             progress.advance(master_task, 1)
-            progress.refresh()
+
+            if i < len(pv.destinations) - 1:
+                next_dest = pv.destinations[i + 1]
+                progress.update(master_task, description=next_dest.name)
 
 
-def print_value(value: ValueForValue, show_boosts=True, show_streamed=True):
+def print_value(
+    value: ValueForValue, console: Console, show_boosts=True, show_streamed=True
+):
     if value.boost:
-        action = click.style("Boosted", fg="red")
+        action = click.style("Boosted", fg="cyan")
         if not show_boosts:
             return
     else:
-        action = click.style("Streamed", fg="blue")
+        action = click.style("Streamed", fg="yellow")
         if not show_streamed:
             return
 
-    click.secho(f"{value.creation_date}", nl=False)
-    click.secho(f" +{int(value.amount_msats / 1000)} ", nl=False, fg="green")
-    click.echo(action, nl=False)
+    text = Text()
+    text.append(str(value.creation_date))
+    text.append(" ")
+    text.append(str(int(value.amount_msats / 1000)), style="green")
+    text.append(" ")
+    text.append(str(action))
+    text.append(" ")
+
+    def append_item(key, value, value_style="bold"):
+        text.append(" ")
+        text.append(str(key))
+        text.append("=")
+        text.append('"')
+        text.append(f"{str(value)}", style=value_style)
+        text.append('"')
 
     if value.amount_msats_total is not None:
         amount = int(value.amount_msats_total / 1000)
-        click.secho(" amount={:d}".format(amount), nl=False)
+        append_item("amount", f"{amount:d}", "bold green")
+
     if value.sender_app_name:
-        click.secho(" app='{}'".format(value.sender_app_name), nl=False)
+        append_item("app", f"{value.sender_app_name}")
+
     if value.sender_name is not None:
-        click.secho(" from='{}'".format(value.sender_name), nl=False)
+        append_item("from", f"{value.sender_app_name}")
+
     if value.receiver_name is not None:
-        click.secho(" to='{}'".format(value.receiver_name), nl=False)
+        append_item("to", f"{value.receiver_name}")
+
     if value.podcast_title is not None:
-        click.secho(" podcast='{}'".format(value.podcast_title), nl=False)
+        append_item("podcast", f"{value.podcast_title}")
+
     if value.episode_title is not None:
-        click.secho(" episode='{}'".format(value.episode_title), nl=False)
+        append_item("episode", f"{value.episode_title}")
+
     if value.timestamp:
         hours = int(value.timestamp / 60 / 60)
         minutes = int((value.timestamp - hours) / 60)
         seconds = int(value.timestamp - hours - minutes)
-        click.secho(
-            " at='{:0>2d}:{:0>2d}:{:0>2d}'".format(hours, minutes, seconds), nl=False
+        append_item(
+            "at",
+            "{:0>2d}:{:0>2d}:{:0>2d}".format(hours, minutes, seconds),
         )
     if value.message is not None:
-        click.secho(" message='{}'".format(value.message), nl=False)
-    click.secho()
+        append_item("message", f"{value.message}", "bold cyan")
+
+    console.print(text)
 
 
 def format_msats(n: int):

@@ -53,7 +53,10 @@ class LightningService:
             pending_only=pending_only,
         )
 
-        invoices = self.parse_grpc_message(response)["invoices"]
+        if not response:
+            return
+
+        invoices = response.invoices
 
         if not accending:
             invoices = reversed(invoices)
@@ -62,7 +65,10 @@ class LightningService:
 
     def watch_value_received(self):
         for invoice in self.client.subscribe_invoices():
-            value = self.invoice_to_value(invoice)
+            try:
+                value = self.invoice_to_value(invoice)
+            except:
+                continue
             if value is not None:
                 yield value
 
@@ -86,14 +92,14 @@ class LightningService:
                 yield value
 
     def invoice_to_value(self, invoice) -> Optional[ValueForValue]:
-        if invoice["state"] != "SETTLED":
+        if not invoice.settled:
             return
 
-        tlv = invoice["htlcs"][0]
-        custom_records = parse_custom_records(tlv.get("customRecords", {}))
+        tlv = invoice.htlcs[0]
+        custom_records = parse_custom_records(tlv.custom_records)
 
         if "podcastindex_records_v2" in custom_records:
-            record = custom_records["posdcastindex_records_v2"]
+            record = custom_records["posdcastinpex_records_v2"]
 
         elif "podcastindex_records_v1" in custom_records:
             record = custom_records["podcastindex_records_v1"]
@@ -117,8 +123,8 @@ class LightningService:
                 amount_msats_total = int(record["value_msat_total"])
 
             return ValueForValue(
-                creation_date=datetime.fromtimestamp(int(invoice["creationDate"])),
-                amount_msats=int(invoice["valueMsat"]),
+                creation_date=datetime.fromtimestamp(int(invoice.creation_date)),
+                amount_msats=int(invoice.value_msat),
                 amount_msats_total=amount_msats_total,
                 boost=record.get("action") == "boost",
                 sender_name=record.get("sender_name"),
@@ -203,19 +209,17 @@ def parse_custom_records(custom_records):
     parsed = {}
 
     for key, value in custom_records.items():
-        if key in ("7629169", "133773310"):
-            value = base64.b64decode(value).decode("utf8")
-            value = try_to_json_decode(value)
-        elif key in ("34349334", "34349340", "34349343", "34349345", "34349347"):
-            value = base64.b64decode(value).decode("utf8")
-
-        parsed[key] = value
+        if key in (7629169, 133773310):
+            try:
+                parsed[key] = json.loads(value.decode("utf8"))
+            except json.decoder.JSONDecodeError:
+                pass
 
     whatsat_records = dict(
-        message=parsed.get("34349334"),
-        signature=parsed.get("34349337"),
-        sender_pubkey=parsed.get("34349339"),
-        timestamp=parsed.get("34349343"),
+        message=parsed.get(34349334),
+        signature=parsed.get(34349337),
+        sender_pubkey=parsed.get(34349339),
+        timestamp=parsed.get(34349343),
     )
     whatsat_records = dict(
         filter(lambda item: item[1] is not None, whatsat_records.items())
@@ -224,12 +228,12 @@ def parse_custom_records(custom_records):
         whatsat_records = None
 
     records = dict(
-        keysend_preimage=parsed.get("5482373484"),
-        podcastindex_records_v1=parsed.get("7629169"),
-        podcastindex_records_v2=parsed.get("7629173"),  # WIP
-        podcastindex_id=parsed.get("7629175"),
+        keysend_preimage=parsed.get(5482373484),
+        podcastindex_records_v1=parsed.get(7629169),
+        podcastindex_records_v2=parsed.get(7629173),  # WIP
+        podcastindex_id=parsed.get(7629175),
         whatsat_records=whatsat_records,
-        sphinx_records=parsed.get("133773310"),
+        sphinx_records=parsed.get(133773310),
     )
 
     return dict(filter(lambda item: item[1] is not None, records.items()))

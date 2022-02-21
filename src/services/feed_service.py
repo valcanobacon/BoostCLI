@@ -29,6 +29,11 @@ class FeedService:
         if soup:
             podcast_title = soup.text
 
+        podcast_desc = None
+        soup = response.data.find("description", recursive=False)
+        if soup:
+            podcast_desc = soup.text
+
         podcast_value_soup = None
         podcast_liveitem_soup = None
 
@@ -81,6 +86,7 @@ class FeedService:
         podcast_value = PodcastValue(
             podcast_url=feed_url,
             podcast_title=podcast_title,
+            podcast_desc=podcast_desc,
             podcast_guid=podcast_guid,
             episode_title=episode_title,
             episode_guid=episode_guid,
