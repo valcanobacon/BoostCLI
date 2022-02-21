@@ -9,8 +9,8 @@ from ..providers.podcast_index_provider import PodcastIndexError, PodcastIndexPr
 class SearchType:
     FEED_URL = 1
     FEED_ID = 2
-    GUID = 2
-    ITUNES_ID = 3
+    GUID = 3
+    ITUNES_ID = 4
 
 
 @dataclass(frozen=True)
@@ -58,6 +58,7 @@ class PodcastIndexService:
             suggested = model.get("suggested")
             feed_url = data["feed"]["url"]
             podcast_title = data["feed"].get("title")
+            podcast_desc = data["feed"].get("description")
             podcast_guid = data["feed"].get("podcastGuid")
             podcast_index_feed_id = data["feed"].get("id")
         except (KeyError, TypeError):
@@ -67,6 +68,7 @@ class PodcastIndexService:
             podcast_title=podcast_title,
             podcast_url=feed_url,
             podcast_guid=podcast_guid,
+            podcast_desc=podcast_desc,
             podcast_index_feed_id=podcast_index_feed_id,
             suggested=suggested,
             destinations=[],
