@@ -4,7 +4,7 @@ import pytest
 
 from src.models import PodcastValue, PodcastValueDestination
 from src.providers.podcast_index_provider import PodcastIndexProvider
-from src.services.podcast_index_service import PodcastIndexService
+from src.services.podcast_index_service import PodcastIndexService, SearchType
 
 
 @pytest.fixture
@@ -26,6 +26,7 @@ def empty_feed():
 def feed():
     return {
         "feed": {
+            "url": sentinel.feed_url,
             "value": {
                 "model": {
                     "type": "lightning",
@@ -54,7 +55,7 @@ def feed():
                         "fee": True,
                     },
                 ],
-            }
+            },
         }
     }
 
@@ -89,27 +90,27 @@ def podcast_value():
 
 def test_empty_feed(provider_mock, service, empty_feed):
     provider_mock.podcasts_byfeedurl.return_value.data = empty_feed
-    response = service.podcast_value(feed_url=sentinel.feed_url)
+    response = service.podcast_value(SearchType.FEED_URL, sentinel.feed_url)
     assert response is None
 
 
 def test_feed(provider_mock, service, feed, podcast_value):
     provider_mock.podcasts_byfeedurl.return_value.data = feed
-    response = service.podcast_value(feed_url=sentinel.feed_url)
+    response = service.podcast_value(SearchType.FEED_URL, sentinel.feed_url)
     assert response == podcast_value
 
 
 def test_feed_not_lightning(provider_mock, service, feed):
     feed["feed"]["value"]["model"]["type"] = "hive"
     provider_mock.podcasts_byfeedurl.return_value.data = feed
-    response = service.podcast_value(feed_url=sentinel.feed_url)
+    response = service.podcast_value(SearchType.FEED_URL, sentinel.feed_url)
     assert response is None
 
 
 def test_feed_not_keysend(provider_mock, service, feed):
     feed["feed"]["value"]["model"]["method"] = "invoice"
     provider_mock.podcasts_byfeedurl.return_value.data = feed
-    response = service.podcast_value(feed_url=sentinel.feed_url)
+    response = service.podcast_value(SearchType.FEED_URL, sentinel.feed_url)
     assert response is None
 
 
@@ -117,5 +118,5 @@ def test_feed_not_destination_node(provider_mock, service, feed, podcast_value):
     feed["feed"]["value"]["destinations"][0]["type"] = "A"
     podcast_value.destinations.pop(0)
     provider_mock.podcasts_byfeedurl.return_value.data = feed
-    response = service.podcast_value(feed_url=sentinel.feed_url)
+    response = service.podcast_value(SearchType.FEED_URL, sentinel.feed_url)
     assert response == podcast_value

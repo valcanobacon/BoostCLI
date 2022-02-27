@@ -1,9 +1,11 @@
 import codecs
+import itertools
 import os
 import textwrap
 from dataclasses import dataclass
 from posixpath import split
 from re import T
+from turtle import width
 from typing import Any, List, Optional
 
 import click
@@ -36,22 +38,39 @@ from ..services.podcast_index_service import PodcastIndexService, SearchType
 
 APP_PUBKEY = "03d55f4d4c870577e98ac56605a54c5ed20c8897e41197a068fd61bdb580efaa67"
 
-ASCII = "\n".join((
-    "         ,/",
-    "       ,'/",
-    "     ,' /",
-    "   ,'  /_____,",
-    " .'____    ,'",
-    "      /  ,'",
-    "     / ,'",
-    "    /,'",
-    "   /'",
-))
+SATOSHISTREAM_PUBKEYS = [
+    "03c457fafbc8b91b462ef0b8f61d4fd96577a4b58c18b50e59621fd0f41a8ae1a4",
+]
+
+LNPAY_PUBKEYS = [
+    "033868c219bdb51a33560d854d500fe7d3898a1ad9e05dd89d0007e11313588500",
+]
+
+HIVE_PUBKEYS = [
+    "0396693dee59afd67f178af392990d907d3a9679fa7ce00e806b8e373ff6b70bd8",
+]
+
+ASCII = "\n".join(
+    (
+        "         ,/",
+        "       ,'/",
+        "     ,' /",
+        "   ,'  /_____,",
+        " .'____    ,'",
+        "      /  ,'",
+        "     / ,'",
+        "    /,'",
+        "   /'",
+    )
+)
+
+MAX_WIDTH = 128
+
 
 @click.group()
 @click.option("--address", default="127.0.0.1")
 @click.option("--port", type=click.IntRange(0), default=10009)
-@click.option("--macaroon", type=click.Path(exists=True), default="readonly.macaroon")
+@click.option("--macaroon", type=click.Path(exists=True), default="admin.macaroon")
 @click.option("--tlscert", type=click.Path(exists=True), default="tls.cert")
 @click.option("--max-message-length", type=click.IntRange(0), default=7777777)
 @click.pass_context
@@ -194,31 +213,27 @@ def boost(ctx, search_term, amount, message, sender_name, support_app):
         title=Text("Split", style="yellow"), box=None, show_header=False
     )
     table_split.add_column(style="yellow")
-    table_split.add_column(style="yellow")
     table_split.add_column(justify="right", style="yellow")
     for dest in pv.destinations:
         if dest.fee:
             continue
-        table_split.add_row(
-            dest.name, f"{dest.address[0:6]}...{dest.address[-7:-1]}", f"{dest.split}%"
-        )
+        table_split.add_row(dest.name, f"{dest.split}%")
 
     table_fee = Table(
         title=Text("Fees", style="red"), box=None, show_header=False, style="red"
     )
     table_fee.add_column(style="red")
-    table_fee.add_column(style="red")
     table_fee.add_column(justify="right", style="red")
     for dest in pv.destinations:
         if not dest.fee:
             continue
-        table_fee.add_row(
-            dest.name, f"{dest.address[0:6]}...{dest.address[-7:-1]}", f"{dest.split}%"
-        )
+        table_fee.add_row(dest.name, f"{dest.split}%")
 
     metadata_text = Text()
     if pv.podcast_title:
         metadata_text.append(f"{pv.podcast_title}\n", style="bold yellow")
+    if pv.episode_title:
+        metadata_text.append(f"{pv.episode_title}\n", style="bold yellow")
     if pv.podcast_guid:
         metadata_text.append(f"{pv.podcast_guid}\n")
     if pv.podcast_url:
@@ -228,21 +243,19 @@ def boost(ctx, search_term, amount, message, sender_name, support_app):
             f"https://podcastindex.org/podcast/{pv.podcast_index_feed_id}\n"
         )
 
-    g = Table.grid()
-    g.add_column()
-    g.add_row(metadata_text)
-    g.add_row(Columns([table_split, table_fee]))
-    
-
     ascii_text = Text(ASCII, style="bold yellow")
 
     grid = Table.grid(padding=2)
     grid.add_column()
     grid.add_column()
 
+    g = Table.grid()
+    g.add_column()
+    g.add_row(metadata_text)
+    g.add_row(Columns([table_split, table_fee]))
     grid.add_row(ascii_text, g)
 
-    console.print(Panel.fit(grid, title="Podcast", width=128))
+    console.print(Panel.fit(grid, title="Podcast", width=MAX_WIDTH))
 
     if not message and sender_name and amount:
         Prompt.ask("Push any key to continue", default=0, show_default=False)
@@ -252,7 +265,7 @@ def boost(ctx, search_term, amount, message, sender_name, support_app):
 
     if sender_name is None:
         sender_name = Prompt.ask(
-            Text("Sender name:", "bold cyan"), default=0, show_default=False
+            Text("Sender name", "bold cyan"), default=0, show_default=False
         )
 
     if message is None:
@@ -269,11 +282,23 @@ def boost(ctx, search_term, amount, message, sender_name, support_app):
 
     table = Table(expand=True, box=None)
     table.add_column("Recipient")
+    table.add_column("Address", justify="center")
     table.add_column("sats", justify="right")
-    for value in boost_invoice.payments:
-        table.add_row(value.receiver_name, format_msats(value.amount_msats))
-    for value in boost_invoice.fees:
-        table.add_row(value.receiver_name, format_msats(value.amount_msats))
+    for value in itertools.chain(boost_invoice.payments, boost_invoice.fees):
+        address = shorten(value.receiver_address)
+
+        if value.receiver_address in LNPAY_PUBKEYS:
+            address = "HIVE"
+        if value.receiver_address in SATOSHISTREAM_PUBKEYS:
+            address = "SS"
+        if value.receiver_address in LNPAY_PUBKEYS:
+            address = "LNPAY"
+
+        if value.custom_key and value.custom_value:
+            if value.custom_key in [696969, 112111100, 818818]:
+                address = f"{address} {value.custom_value.decode('utf8')}"
+
+        table.add_row(value.receiver_name, address, format_msats(value.amount_msats))
 
     invoice_panel = Panel(table, title="Invoice", style="yellow")
 
@@ -284,6 +309,7 @@ def boost(ctx, search_term, amount, message, sender_name, support_app):
         "{} sats".format(format_msats(boost_invoice.amount)), style="bold"
     )
     boost_text.append("\n")
+    boost_text.append("\n")
     boost_text.append(message, style="bold")
 
     boost_panel = Panel(
@@ -292,8 +318,8 @@ def boost(ctx, search_term, amount, message, sender_name, support_app):
         style="cyan",
     )
 
-    console.print(invoice_panel, width=128)
-    console.print(boost_panel, width=128)
+    console.print(invoice_panel, width=MAX_WIDTH)
+    console.print(boost_panel, width=MAX_WIDTH)
 
     if not Confirm.ask("Send?"):
         return
@@ -301,11 +327,13 @@ def boost(ctx, search_term, amount, message, sender_name, support_app):
     progress = Progress(
         SpinnerColumn(),
         "[progress.description]{task.description}",
-        BarColumn(bar_width=128),
+        BarColumn(bar_width=MAX_WIDTH),
         "[progress.percentage]{task.percentage:>3.0f}%",
         TimeElapsedColumn(),
     )
-    master_task = progress.add_task(pv.destinations[0].name, total=len(pv.destinations))
+    master_task = progress.add_task(
+        pv.destinations[0].name, total=len(pv.destinations), width=MAX_WIDTH
+    )
 
     with progress:
         payments = lighting_service.pay_boost_invoice(boost_invoice)
@@ -315,7 +343,7 @@ def boost(ctx, search_term, amount, message, sender_name, support_app):
             progress.refresh()
 
             hash = payment.payment_hash.hex()
-            short_hash = f"{hash[0:6]}...{hash[-7:-1]}"
+            short_hash = shorten(hash)
             fee = format_msats(payment.payment_route.total_fees_msat)
             total = format_msats(payment.payment_route.total_amt_msat)
             hops = len(payment.payment_route.hops)
@@ -395,8 +423,18 @@ def print_value(
     console.print(text)
 
 
+def shorten(pubkey: str, segment_length=8, seperator=" ... ") -> str:
+    if len(pubkey) < segment_length * 2:
+        return pubkey
+    prefix = pubkey[0:segment_length]
+    suffix = pubkey[-1 * segment_length - 1 : -1]
+    return f"{prefix}{seperator}{suffix}"
+
+
 def format_msats(n: int):
-    return "{:,}.{:03}".format(n // 1000, n % 1000)
+    sats = n // 1000
+    msats = n % 1000
+    return f"{sats:,} .{msats:03}".replace(",", " ")
 
 
 def read_macaroon(filename):
