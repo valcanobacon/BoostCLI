@@ -5,7 +5,7 @@
 
 ## Requirements
 
-* Python `3.9+`
+* Python `3.7+`
 * setuptools (tested with `57.4.0`)
 * A Raspiblitz Node (LNPay Support Coming)
 

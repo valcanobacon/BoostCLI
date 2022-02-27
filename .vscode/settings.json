@@ -16,6 +16,7 @@
         "lncli",
         "lndgrpc",
         "LNPAY",
+        "lxml",
         "msat",
         "msats",
         "posdcastindex",
