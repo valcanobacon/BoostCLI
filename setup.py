@@ -3,10 +3,10 @@
 from setuptools import find_packages, setup
 
 setup(
-    name="BoostCLI",
+    name="BoostBots",
     version="0.1.1",
-    python_requires=">=3.9",
-    description="Boost CLI",
+    python_requires=">=3.7",
+    description="Boost Bots",
     author_email="boostcli.v1pty@slmail.me",
     packages=find_packages(include=["src", "src.*"]),
     entry_points={
@@ -29,6 +29,10 @@ setup(
         "rich<12,>=11.2.0",
     ],
     extras_require={
-        "tests": ["pytest>=6.2.5,<7"],
+        "tests": [
+            "pytest<7,>=6.2.5",
+            "flake8<5,>=4.0.1",
+            "flake8-black<1,>=0.3.2",
+        ],
     },
 )

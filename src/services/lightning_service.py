@@ -1,4 +1,3 @@
-import base64
 import codecs
 import hashlib
 import itertools
@@ -152,8 +151,7 @@ class LightningService:
                 "sender_name": value.sender_name,
                 "sender_id": value.sender_id,
                 "sender_key": value.sender_key,
-                "app_name": value.sender_app_name,
-                "app_value": value.sender_app_version,
+                "app_version": value.sender_app_version,
                 "name": value.receiver_name,
                 "message": value.message,
                 "podcast": value.podcast_title,

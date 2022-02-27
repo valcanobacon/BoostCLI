@@ -1,25 +1,14 @@
 import codecs
 import itertools
 import os
-import textwrap
-from dataclasses import dataclass
-from posixpath import split
-from re import T
-from turtle import width
-from typing import Any, List, Optional
+from typing import Optional
 
 import click
-import rich
-import tqdm
-from google.protobuf.json_format import MessageToJson
-from rich import print
 from rich.columns import Columns
 from rich.console import Console
-from rich.emoji import Emoji
 from rich.panel import Panel
 from rich.progress import BarColumn, Progress, SpinnerColumn, TimeElapsedColumn
 from rich.prompt import Confirm, IntPrompt, Prompt
-from rich.rule import Rule
 from rich.table import Table
 from rich.text import Text
 
@@ -357,7 +346,7 @@ def boost(ctx, search_term, amount, message, sender_name, support_app):
 
             progress.advance(master_task, 1)
 
-            if i < len(pv.destinations) - 1:
+            if i < len(pv.destiations) - 1:
                 next_dest = pv.destinations[i + 1]
                 progress.update(master_task, description=next_dest.name)
 

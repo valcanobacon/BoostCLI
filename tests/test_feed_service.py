@@ -1,15 +1,13 @@
-from typing import Final
 from unittest.mock import Mock, sentinel
 
 import pytest
-import requests
 from bs4 import BeautifulSoup
 
 from src.models import PodcastValue, PodcastValueDestination
 from src.providers.feed_provider import FeedError, FeedProvider, FeedResponse
 from src.services.feed_service import FeedService
 
-FEED: Final = """
+FEED = """
 <rss version="2.0">
   <channel>
     <podcast:value type="lightning" method="keysend" suggested="0.00001000000">
@@ -21,7 +19,7 @@ FEED: Final = """
 </rss>
 """
 
-FEED_WITH_LIVE_VALUE: Final = """
+FEED_WITH_LIVE_VALUE = """
 <rss version="2.0">
   <channel>
     <podcast:value type="lightning" method="keysend" suggested="0.00001000000">

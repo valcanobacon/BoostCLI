@@ -1,5 +1,4 @@
-from typing import Final
-from unittest.mock import ANY, Mock, sentinel
+from unittest.mock import Mock, sentinel
 
 import pytest
 import requests
@@ -7,7 +6,7 @@ from bs4 import BeautifulSoup
 
 from src.providers.feed_provider import FeedError, FeedProvider, FeedResponse
 
-FEED: Final = f"""
+FEED = """
 <rss version="2.0">
   <channel>
     <podcast:value type="lightning" method="keysend" suggested="0.00001000000">

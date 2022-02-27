@@ -1,11 +1,11 @@
 import hashlib
 import time
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Final
+from typing import Any, Callable, Dict
 
 import requests
 
-DEFAULT_BASE_URL: Final = "https://api.podcastindex.org/api/1.0"
+DEFAULT_BASE_URL = "https://api.podcastindex.org/api/1.0"
 
 
 @dataclass

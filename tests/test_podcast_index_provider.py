@@ -1,4 +1,4 @@
-from unittest.mock import ANY, Mock, sentinel
+from unittest.mock import Mock, sentinel
 
 import pytest
 import requests
