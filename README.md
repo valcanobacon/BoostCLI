@@ -1,7 +1,10 @@
 
 # BoostCLI
 
+<img width=100 height=100 src="boostcli.png" />
+
 [![Tests](https://github.com/valcanobacon/BoostCLI/actions/workflows/ci.yml/badge.svg)](https://github.com/valcanobacon/BoostCLI/actions/workflows/ci.yml)
+
 
 ## Requirements
 
