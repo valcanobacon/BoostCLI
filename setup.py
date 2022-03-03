@@ -3,10 +3,10 @@
 from setuptools import find_packages, setup
 
 setup(
-    name="BoostBots",
-    version="0.1.1",
+    name="BoostCLI",
+    version="0.1.2",
     python_requires=">=3.7",
-    description="Boost Bots",
+    description="Boost CLI",
     author_email="boostcli.v1pty@slmail.me",
     packages=find_packages(include=["src", "src.*"]),
     entry_points={

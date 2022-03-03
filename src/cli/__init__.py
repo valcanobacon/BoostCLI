@@ -346,7 +346,7 @@ def boost(ctx, search_term, amount, message, sender_name, support_app):
 
             progress.advance(master_task, 1)
 
-            if i < len(pv.destiations) - 1:
+            if i < len(pv.destinations) - 1:
                 next_dest = pv.destinations[i + 1]
                 progress.update(master_task, description=next_dest.name)
 
@@ -416,7 +416,7 @@ def shorten(pubkey: str, segment_length=8, seperator=" ... ") -> str:
     if len(pubkey) < segment_length * 2:
         return pubkey
     prefix = pubkey[0:segment_length]
-    suffix = pubkey[-1 * segment_length - 1 : -1]
+    suffix = pubkey[-1 * segment_length :]
     return f"{prefix}{seperator}{suffix}"
 
 
