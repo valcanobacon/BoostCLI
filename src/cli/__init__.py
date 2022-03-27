@@ -251,12 +251,14 @@ def boost(ctx, search_term, amount, message, sender_name, support_app):
 
     try:
         balance = lighting_service.client.channel_balance().local_balance.sat
-    except Exception as err:
+    except AttributeError as err:
         console.print(err)
         balance = "?"
 
     if amount is None:
-        amount = IntPrompt.ask(Text("amount (sats) [bal {:,d}]".format(balance), style="bold yellow"))
+        amount = IntPrompt.ask(
+            Text("amount (sats) [bal {:,d}]".format(balance), style="bold yellow")
+        )
 
     if sender_name is None:
         sender_name = Prompt.ask(
