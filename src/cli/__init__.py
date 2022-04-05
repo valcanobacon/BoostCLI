@@ -174,7 +174,8 @@ def find_podcast_value(
 @click.option("--message")
 @click.option("--sender-name")
 @click.option("--support-app/--no-support-app", default=True)
-def boost(ctx, search_term, amount, message, sender_name, support_app):
+@click.option("-y", '--yes', is_flag=True, help='Bypasses message and confirmation prompts')
+def boost(ctx, search_term, amount, message, sender_name, support_app, yes):
     console: Console = ctx.obj["console"]
     console_error: Console = ctx.obj["console_error"]
     feed_service: FeedService = ctx.obj["feed_service"]
@@ -246,8 +247,15 @@ def boost(ctx, search_term, amount, message, sender_name, support_app):
 
     console.print(Panel.fit(grid, title="Podcast", width=MAX_WIDTH))
 
-    if not message and sender_name and amount:
+    if not message and sender_name and amount and not yes:
         Prompt.ask("Push any key to continue", default=0, show_default=False)
+
+    if yes:
+        if amount is None:
+            print("--yes error: Define an amount using --amount !")
+            return
+        if sender_name is None:
+            sender_name = "Anonymous"
 
     if amount is None:
         amount = IntPrompt.ask(Text("amount (sats)", style="bold yellow"))
@@ -257,7 +265,7 @@ def boost(ctx, search_term, amount, message, sender_name, support_app):
             Text("Sender name", "bold cyan"), default=0, show_default=False
         )
 
-    if message is None:
+    if message is None and not yes:
         message = click.edit("Write message... 300 characters max")
         message = message[:300]
 
@@ -299,7 +307,9 @@ def boost(ctx, search_term, amount, message, sender_name, support_app):
     )
     boost_text.append("\n")
     boost_text.append("\n")
-    boost_text.append(message, style="bold")
+
+    if not yes:
+        boost_text.append(message, style="bold")
 
     boost_panel = Panel(
         boost_text,
@@ -310,8 +320,9 @@ def boost(ctx, search_term, amount, message, sender_name, support_app):
     console.print(invoice_panel, width=MAX_WIDTH)
     console.print(boost_panel, width=MAX_WIDTH)
 
-    if not Confirm.ask("Send?"):
-        return
+    if not yes:
+        if not Confirm.ask("Send?"):
+            return
 
     progress = Progress(
         SpinnerColumn(),
