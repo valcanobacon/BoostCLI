@@ -174,7 +174,9 @@ def find_podcast_value(
 @click.option("--message")
 @click.option("--sender-name")
 @click.option("--support-app/--no-support-app", default=True)
-@click.option("-y", '--yes', is_flag=True, help='Bypasses message and confirmation prompts')
+@click.option(
+    "-y", "--yes", is_flag=True, help="Bypasses message and confirmation prompts"
+)
 def boost(ctx, search_term, amount, message, sender_name, support_app, yes):
     console: Console = ctx.obj["console"]
     console_error: Console = ctx.obj["console_error"]
