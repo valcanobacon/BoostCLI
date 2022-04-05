@@ -310,7 +310,7 @@ def boost(ctx, search_term, amount, message, sender_name, support_app, yes):
     boost_text.append("\n")
     boost_text.append("\n")
 
-    if not yes:
+    if message:
         boost_text.append(message, style="bold")
 
     boost_panel = Panel(
