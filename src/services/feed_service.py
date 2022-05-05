@@ -25,7 +25,7 @@ class FeedService:
             podcast_guid = soup.text
 
         podcast_title = None
-        soup = response.data.find("title", recursive=False)
+        soup = response.data.find("title", recursive=True)
         if soup:
             podcast_title = soup.text
 
