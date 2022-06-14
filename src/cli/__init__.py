@@ -177,7 +177,11 @@ def find_podcast_value(
 @click.option(
     "-y", "--yes", is_flag=True, help="Bypasses message and confirmation prompts"
 )
-@click.option("--ignore", type=str, help="Skip this destination pubkey - intended for use w/ value blocks that includes your node")
+@click.option(
+    "--ignore",
+    type=str,
+    help="Skip this destination pubkey - intended for use w/ value blocks that includes your node",
+)
 def boost(ctx, search_term, amount, message, sender_name, support_app, yes, ignore):
     console: Console = ctx.obj["console"]
     console_error: Console = ctx.obj["console_error"]
