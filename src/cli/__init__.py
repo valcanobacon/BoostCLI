@@ -177,7 +177,8 @@ def find_podcast_value(
 @click.option(
     "-y", "--yes", is_flag=True, help="Bypasses message and confirmation prompts"
 )
-def boost(ctx, search_term, amount, message, sender_name, support_app, yes):
+@click.option("--ignore", type=str, help="Skip this destination pubkey - intended for use w/ value blocks that includes your node")
+def boost(ctx, search_term, amount, message, sender_name, support_app, yes, ignore):
     console: Console = ctx.obj["console"]
     console_error: Console = ctx.obj["console_error"]
     feed_service: FeedService = ctx.obj["feed_service"]
@@ -190,6 +191,19 @@ def boost(ctx, search_term, amount, message, sender_name, support_app, yes):
             f':broken_heart: Failed to locate value by search_term="{search_term}"'
         )
         exit(1)
+
+    if ignore:
+        for dest in pv.destinations:
+            if dest.address in ignore:
+                pv.destinations.remove(
+                    PodcastValueDestination(
+                        split=dest.split,
+                        address=ignore,
+                        name=dest.name,
+                        fee=dest.fee,
+                    )
+                )
+                break
 
     if support_app:
         pv.destinations.append(
