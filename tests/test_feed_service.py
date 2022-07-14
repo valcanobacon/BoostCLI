@@ -93,6 +93,7 @@ def podcast_value_with_live_value():
     return PodcastValue(
         suggested="0.00001000000",
         podcast_url=sentinel.feed_url,
+        podcast_title="Live!",
         episode_title="Live!",
         episode_guid="123",
         destinations=[
