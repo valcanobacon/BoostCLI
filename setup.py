@@ -4,7 +4,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="BoostCLI",
-    version="0.2.0",
+    version="0.2.1",
     python_requires=">=3.7",
     description="Boost CLI",
     author_email="boostcli.v1pty@slmail.me",
