@@ -213,14 +213,34 @@ def find_podcast_value(
 @cli.command()
 @click.pass_context
 @click.argument("search_term")
-@click.option("--amount", type=click.IntRange(0))
-@click.option("--message")
-@click.option("--sender-name")
-@click.option("--support-app/--no-support-app", default=True)
+@click.option(
+    "--amount",
+    type=click.IntRange(0),
+    metavar="SATS",
+    help="The number of Satoshis to send",
+)
+@click.option("--message", help="The message to include in the Boost")
+@click.option("--sender-name", help="The name indicating who sent the Boost")
+@click.option(
+    "--support-app/--no-support-app",
+    default=True,
+    help="Pay 1% Fee to Support BoostCLI",
+)
 @click.option(
     "-y", "--yes", is_flag=True, help="Bypasses message and confirmation prompts"
 )
 def boost(ctx, search_term, amount, message, sender_name, support_app, yes):
+    """
+    BoostCLI will try to find the Podcast by the given SEARCH_TERM which
+    can one of many different things: Feed URL, Podcast Index Feed ID,
+    Podcast Index GUID, or ITunes ID. If the Podcast's Feed does not contain
+    a value block then the Podcast Index will be checked.
+
+    $ boostcli boost http://mp3s.nashownotes.com/pc20rss.xml
+    $ boostcli boost https://podcastindex.org/podcast/920666
+    $ boostcli boost 920666
+    $ boostcli boost 917393e3-1b1e-5cef-ace4-edaa54e1f810
+    """
     console: Console = ctx.obj["console"]
     console_error: Console = ctx.obj["console_error"]
     feed_service: FeedService = ctx.obj["feed_service"]
