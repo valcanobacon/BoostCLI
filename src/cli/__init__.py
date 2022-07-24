@@ -98,7 +98,7 @@ def cli(ctx, **kwargs):
 
     Running BoostCLI on Raspiblitz:
 
-    $ boostcli --host localhost --port 10009 --macaroon /mnt/hdd/app-data/lnd/data/chain/bitcoin/mainnet/admin.macaroon --tlscert /mnt/hdd/app-data/lnd/tls.cert
+    $ boostcli --macaroon /mnt/hdd/app-data/lnd/data/chain/bitcoin/mainnet/admin.macaroon --tlscert /mnt/hdd/app-data/lnd/tls.cert
 
     """
     ctx.ensure_object(dict)
