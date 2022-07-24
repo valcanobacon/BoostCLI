@@ -237,6 +237,7 @@ def boost(ctx, search_term, amount, message, sender_name, support_app, yes):
     Podcast Index GUID, or ITunes ID. If the Podcast's Feed does not contain
     a value block then the Podcast Index will be checked.
 
+    \b
     $ boostcli boost http://mp3s.nashownotes.com/pc20rss.xml
     $ boostcli boost https://podcastindex.org/podcast/920666
     $ boostcli boost 920666
