@@ -12,17 +12,21 @@
 * setuptools (tested with `57.4.0`)
 * A Raspiblitz Node (LNPay Support Coming)
 
-## Commands
-
-### Send a Boost
-
-![boostcli-send-boost-gif](/boost.gif)
-
-### List Received Boosts
-
-![boostcli-list-received-boosts-gif](/boosts-received-list.gif)
-
 ## Quick Start
+
+```
+$ pip install BoostCLI
+$ boostcli boost http://mp3s.nashownotes.com/pc20rss.xml
+```
+
+### Raspiblitz
+
+```
+$ pip install BoostCLI
+$ boostcli --macaroon /mnt/hdd/app-data/lnd/data/chain/bitcoin/mainnet/admin.macaroon --tlscert /mnt/hdd/app-data/lnd/tls.cert boost http://mp3s.nashownotes.com/pc20rss.xml
+```
+
+## Not Quick Start 
 
 ### Terminal #1
 
@@ -61,26 +65,18 @@ pip install -e .
 
 ```sh
 boostcli --help
-boostcli boosts-received-list --help
+boostcli boosts --help
 ```
 
 #### Run Command
 
 ```sh
-boostcli --tlscert tls.cert --macaroon readonly.macaroon --address 127.0.0.1 --port 10009 boosts-received-list --datetime-range-end 2021-10-26
-```
-
-```
-2021-10-29 12:59:26 +1 Chat from='abcdefghijklmnopqrstuvwxyz' message='Hello From ThunderHub'
-2021-10-28 23:06:58 +1320 Boosted amount='1333' app='Fountain' from='@adam' to='Podcaster' podcast='Test Podcast' episode='The first test' at='00:01' message='Hello World'
-2021-10-28 23:01:18 +94 Boosted amount='100' app='Breez' podcast='Test Podcast' episode='The second test' at='00:00:01'
-2021-10-28 22:46:04 +5245 Streamed
-2021-10-28 22:43:01 +327 Streamed
+$ boostcli --macaroon /mnt/hdd/app-data/lnd/data/chain/bitcoin/mainnet/admin.macaroon --tlscert /mnt/hdd/app-data/lnd/tls.cert boost http://mp3s.nashownotes.com/pc20rss.xml
 ```
 
 ## Virtual Environment Explained
 
-Using a Python Virtual Environment is optional but highly recommended and is standard practice with development. The basic idea is you create a virtual environment for each project and install all the dependencies into it. The Virtual Environment only needs to be created once but must be activated everytime a new terminal is opened.
+Using a Python Virtual Environment is optional but highly recommended and is standard practice with development. The basic idea is you create a virtual environment for each project and install all the dependencies into it. The Virtual Environment only needs to be created once but must be activated every time a new terminal is opened.
 
 ### Create Virtual Environment
 
@@ -94,7 +90,7 @@ python3 -m venv venv
 source venv/bin/activate
 ```
 
-### Deactive Environment
+### Deactivate Environment
 
 ```sh
 deactivate
