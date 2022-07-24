@@ -98,6 +98,7 @@ def cli(ctx, **kwargs):
 
     Running BoostCLI on Raspiblitz:
 
+    \b
     $ boostcli --macaroon /mnt/hdd/app-data/lnd/data/chain/bitcoin/mainnet/admin.macaroon --tlscert /mnt/hdd/app-data/lnd/tls.cert
 
     """
