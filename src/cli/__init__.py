@@ -132,7 +132,7 @@ def cli(ctx, **kwargs):
 
     ctx.obj["feed_service"] = FeedService()
 
-    with console.status("Connecting to LND") as status:
+    with console.status("Connecting to LND"):
         info = lightning_service.get_info()
 
     if not info:
