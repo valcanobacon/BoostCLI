@@ -2,11 +2,19 @@
 
 from setuptools import find_packages, setup
 
+# read the contents of your README file
+from pathlib import Path
+
+this_directory = Path(__file__).parent
+long_description = (this_directory / "README.md").read_text()
+
 setup(
     name="BoostCLI",
-    version="0.2.2",
+    version="0.3.0",
     python_requires=">=3.7",
-    description="Boost CLI",
+    description="Command line tool to send and review Podcasting 2.0 Value",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     author_email="boostcli.v1pty@slmail.me",
     packages=find_packages(include=["src", "src.*"]),
     entry_points={
