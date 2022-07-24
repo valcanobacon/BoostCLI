@@ -10,9 +10,9 @@ long_description = (this_directory / "README.md").read_text()
 
 setup(
     name="BoostCLI",
-    version="0.3.3",
+    version="0.3.4",
     python_requires=">=3.7",
-    description="Command line tool to send and review Podcasting 2.0 Value",
+    description="Command line tool to send and receive Podcasting 2.0 Value",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author_email="boostcli.v1pty@slmail.me",
@@ -34,13 +34,17 @@ setup(
         "requests<3,>=2.27.1",
         "tabulate<1,>=0.8.9",
         "tqdm<5,>=4.62.3",
-        "rich<12,>=11.2.0",
+        "rich<13,>=12.5.1",
     ],
     extras_require={
         "tests": [
             "pytest<7,>=6.2.5",
             "flake8<5,>=4.0.1",
             "flake8-black<1,>=0.3.2",
+        ],
+        "deploy": [
+            "build<1,>=0.8.0",
+            "twine<5,>=4.0.1",
         ],
     },
 )
