@@ -55,15 +55,52 @@ ASCII = "\n".join(
 
 MAX_WIDTH = 128
 
+CONTEXT_SETTINGS = dict(
+    show_default=True,
+)
 
-@click.group()
-@click.option("--address", default="127.0.0.1")
-@click.option("--port", type=click.IntRange(0), default=10009)
-@click.option("--macaroon", type=click.Path(exists=True), default="admin.macaroon")
-@click.option("--tlscert", type=click.Path(exists=True), default="tls.cert")
-@click.option("--max-message-length", type=click.IntRange(0), default=7777777)
+
+@click.group(context_settings=CONTEXT_SETTINGS)
+@click.option(
+    "--address",
+    default="127.0.0.1",
+    metavar="ADDRESS",
+    help="Address of the LND server",
+)
+@click.option(
+    "--port",
+    type=click.IntRange(0),
+    default=10009,
+    metavar="PORT",
+    help="Port of the LND server",
+)
+@click.option(
+    "--macaroon",
+    type=click.Path(exists=True),
+    default="./admin.macaroon",
+    help="Path to the Macaroon for LND for access to the LND server",
+)
+@click.option(
+    "--tlscert",
+    type=click.Path(exists=True),
+    default="./tls.cert",
+    help="Path of the TLS Certificate for connection to the LND server",
+)
 @click.pass_context
 def cli(ctx, **kwargs):
+    """
+    BoostCLI works by establishing a connection to an LND Server then
+    preforming a Command. BoostCLI's first options configure the connection:
+    `address`, `port`, `macaroon` and `tlscert`. After the connection
+    configuration select a Command to run, `boost`.  Usage instructions all
+    Commands can be display by running the -h/--help after the command
+    `boostcli boost --help`.
+
+    Running BoostCLI on Raspiblitz:
+
+    $ boostcli --host localhost --port 10009 --macaroon /mnt/hdd/app-data/lnd/data/chain/bitcoin/mainnet/admin.macaroon --tlscert /mnt/hdd/app-data/lnd/tls.cert
+
+    """
     ctx.ensure_object(dict)
 
     # from: https://github.com/lightningnetwork/lnd/blob/master/docs/grpc/python.md
@@ -96,17 +133,12 @@ def cli(ctx, **kwargs):
 
 
 @cli.command()
-@click.option("--datetime-range-end", type=click.DateTime())
 @click.option("--accending/--decending", default=False)
-@click.option("--show-chats/--no-show-chats", default=True)
-@click.option("--show-boots/--no-show-boots", default=True)
-@click.option("--show-streamed/--no-show-streamed", default=True)
-@click.option("--show-sphinx/--no-show-sphinx", default=True)
-@click.option("--show-other/--no-show-other", default=False)
 @click.option("--max-number-of-invoices", type=click.IntRange(0), default=10000)
 @click.option("--index-offset", type=click.IntRange(0), default=0)
 @click.pass_context
 def received_boosts(ctx, **kwargs):
+    """ Display Boosts that have been received.  """
     console: Console = ctx.obj["console"]
     console_error: Console = ctx.obj["console_error"]
     lighting_service: LightningService = ctx.obj["lightning_service"]
@@ -128,6 +160,8 @@ def received_boosts(ctx, **kwargs):
 @cli.command()
 @click.pass_context
 def incoming_boosts(ctx, **kwargs):
+    """ Display Boosts as they are received. """
+
     console: Console = ctx.obj["console"]
     console_error: Console = ctx.obj["console_error"]
     lighting_service: LightningService = ctx.obj["lightning_service"]
