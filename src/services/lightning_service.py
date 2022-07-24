@@ -37,6 +37,9 @@ class LightningService:
     def parse_grpc_message(self, grpc_message) -> Any:
         return json.loads(MessageToJson(grpc_message))
 
+    def get_info(self):
+        return self.client.get_info()
+
     def invoices(
         self,
         index_offset=0,

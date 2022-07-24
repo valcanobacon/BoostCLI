@@ -109,10 +109,10 @@ def cli(ctx, **kwargs):
     # error when we communicate with the lnd rpc server.
     os.environ["GRPC_SSL_CIPHER_SUITES"] = "HIGH+ECDSA"
 
-    ctx.obj["console"] = Console()
-    ctx.obj["console_error"] = Console(stderr=True, style="bold red")
+    console = ctx.obj["console"] = Console()
+    console_error = ctx.obj["console_error"] = Console(stderr=True, style="bold red")
 
-    ctx.obj["lightning_service"] = LightningService(
+    lightning_service = ctx.obj["lightning_service"] = LightningService(
         client=lightning_client_from(
             host=kwargs["address"],
             port=kwargs["port"],
@@ -131,6 +131,11 @@ def cli(ctx, **kwargs):
 
     ctx.obj["feed_service"] = FeedService()
 
+    info = lightning_service.get_info()
+    if not info:
+        console_error.log("failed to connect to LND server")
+        ctx.abort()
+
 
 @cli.command()
 @click.option("--accending/--decending", default=False)
@@ -138,7 +143,7 @@ def cli(ctx, **kwargs):
 @click.option("--index-offset", type=click.IntRange(0), default=0)
 @click.pass_context
 def received_boosts(ctx, **kwargs):
-    """ Display Boosts that have been received.  """
+    """Display Boosts that have been received."""
     console: Console = ctx.obj["console"]
     console_error: Console = ctx.obj["console_error"]
     lighting_service: LightningService = ctx.obj["lightning_service"]
@@ -160,7 +165,7 @@ def received_boosts(ctx, **kwargs):
 @cli.command()
 @click.pass_context
 def incoming_boosts(ctx, **kwargs):
-    """ Display Boosts as they are received. """
+    """Display Boosts as they are received."""
 
     console: Console = ctx.obj["console"]
     console_error: Console = ctx.obj["console_error"]
