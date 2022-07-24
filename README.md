@@ -26,6 +26,10 @@ $ pip install BoostCLI
 $ boostcli --macaroon /mnt/hdd/app-data/lnd/data/chain/bitcoin/mainnet/admin.macaroon --tlscert /mnt/hdd/app-data/lnd/tls.cert boost http://mp3s.nashownotes.com/pc20rss.xml
 ```
 
+## Demo
+
+![Demo Boost Gif](https://user-images.githubusercontent.com/95843224/180660770-2d58646a-95aa-42f2-8505-c7715b1c4048.gif)
+
 ## Not Quick Start 
 
 ### Terminal #1
