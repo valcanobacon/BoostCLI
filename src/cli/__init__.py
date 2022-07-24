@@ -131,10 +131,14 @@ def cli(ctx, **kwargs):
 
     ctx.obj["feed_service"] = FeedService()
 
-    info = lightning_service.get_info()
+    with console.status("Connecting to LND") as status:
+        info = lightning_service.get_info()
+
     if not info:
         console_error.log("failed to connect to LND server")
         ctx.abort()
+    else:
+        console.print(f"Connected to LND server ({info.alias}), version {info.version}")
 
 
 @cli.command()
