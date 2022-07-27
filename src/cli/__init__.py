@@ -77,13 +77,11 @@ CONTEXT_SETTINGS = dict(
 @click.option(
     "--macaroon",
     type=click.Path(exists=True),
-    default="./admin.macaroon",
     help="Path to the Macaroon for LND for access to the LND server",
 )
 @click.option(
     "--tlscert",
     type=click.Path(exists=True),
-    default="./tls.cert",
     help="Path of the TLS Certificate for connection to the LND server",
 )
 @click.pass_context
