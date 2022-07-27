@@ -10,7 +10,7 @@ long_description = (this_directory / "README.md").read_text()
 
 setup(
     name="BoostCLI",
-    version="0.4.0",
+    version="0.4.1",
     python_requires=">=3.7",
     description="Command line tool to send and receive Podcasting 2.0 Value",
     long_description=long_description,
@@ -23,7 +23,7 @@ setup(
         ],
     },
     install_requires=[
-        "lnd-grpc-client<3,>=2.0.0",
+        "lnd-grpc-client<1,>=0.4.3",
         "click<9,>=8.0.3",
         "beautifulsoup4<5,>=4.10.0",
         "lxml<5,>=4.7.1",
