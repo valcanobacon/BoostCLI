@@ -5,6 +5,7 @@
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
     "cSpell.words": [
+        "beautifulsoup",
         "Boostagram",
         "Boostagrams",
         "boostcli",
