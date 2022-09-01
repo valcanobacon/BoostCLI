@@ -10,3 +10,5 @@ dist/
 .DS_Store
 __MACOSX/
 .scratch/
+conf/
+logs/

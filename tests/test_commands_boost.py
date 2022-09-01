@@ -1,4 +1,4 @@
-from src.cli import SATOSHISTREAM_PUBKEYS, shorten
+from src.cli.commands.boost import SATOSHISTREAM_PUBKEYS, shorten
 
 
 def test_shorten():

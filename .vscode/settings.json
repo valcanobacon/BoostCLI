@@ -22,12 +22,17 @@
         "msats",
         "posdcastindex",
         "protobuf",
+        "PUBKEY",
+        "PUBKEYS",
         "Raspiblitz",
         "SATOSHISTREAM",
         "sats",
         "secho",
         "setuptools",
         "tablefmt",
+        "tlscert",
         "venv"
-    ]
+    ],
+    "python.linting.flake8Enabled": true,
+    "python.linting.enabled": true
 }
