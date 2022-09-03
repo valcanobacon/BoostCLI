@@ -65,6 +65,29 @@ class LightningService:
 
         yield from invoices
 
+    def payments(
+        self,
+        index_offset=0,
+        max_payments=None,
+        accending=True,
+    ) -> Generator:
+
+        response = self.client.list_payments(
+            index_offset=index_offset,
+            max_payments=max_payments,
+            reversed=accending,
+        )
+
+        if not response:
+            return
+
+        payments = response.payments
+
+        if accending:
+            payments = reversed(payments)
+
+        yield from payments
+
     def watch_value_received(self):
         for invoice in self.client.subscribe_invoices():
             try:
@@ -93,6 +116,91 @@ class LightningService:
             if value is not None:
                 yield value
 
+    def value_sent(
+        self,
+        index_offset=0,
+        max_payments=None,
+        accending=True,
+    ) -> Generator:
+
+        payments = self.payments(
+            index_offset=index_offset,
+            max_payments=max_payments,
+            accending=accending,
+        )
+
+        for payment in payments:
+            value = self.payment_to_value(payment)
+            if value is not None:
+                yield value
+
+    def record_to_timestamp(self, record):
+        timestamp = None
+        try:
+            if "ts" in record:
+                timestamp = int(record["ts"])
+            elif "time" in record:
+                struct_time = time.strptime(record["time"], "%H:%M:%S")
+                timestamp = (
+                    struct_time.tm_hour * 60 * 60
+                    + struct_time.tm_min * 60
+                    + struct_time.tm_sec
+                )
+        except TypeError:
+            pass
+        return timestamp
+
+    def podcastindex_record_v1_to_value(
+        self,
+        record,
+        creation_date: datetime,
+        amount_msats: int,
+    ):
+        timestamp = self.record_to_timestamp(record)
+
+        amount_msats_total = None
+        if "value_msat_total" in record:
+            amount_msats_total = int(record["value_msat_total"])
+
+        return ValueForValue(
+            creation_date=creation_date,
+            amount_msats=amount_msats,
+            amount_msats_total=amount_msats_total,
+            boost=record.get("action") == "boost",
+            sender_name=record.get("sender_name"),
+            sender_id=record.get("sender_id"),
+            sender_key=record.get("sender_key"),
+            sender_app_name=record.get("app_name"),
+            sender_app_version=record.get("app_version"),
+            receiver_name=record.get("name"),
+            message=record.get("message"),
+            podcast_title=record.get("podcast"),
+            podcast_url=record.get("url"),
+            podcast_guid=record.get("guid"),
+            episode_title=record.get("episode"),
+            episode_guid=record.get("episode_guid"),
+            podcast_index_feed_id=record.get("feedID"),
+            podcast_index_item_id=record.get("itemID"),
+            timestamp=timestamp,
+        )
+
+    def payment_to_value(self, payment) -> Optional[ValueForValue]:
+        custom_records = parse_custom_records(
+            payment.htlcs[0].route.hops[-1].custom_records
+        )
+
+        if "podcastindex_records_v2" in custom_records:
+            record = custom_records["posdcastindex_records_v2"]
+
+        elif "podcastindex_records_v1" in custom_records:
+            record = custom_records["podcastindex_records_v1"]
+
+            return self.podcastindex_record_v1_to_value(
+                record,
+                creation_date=datetime.fromtimestamp(int(payment.creation_date)),
+                amount_msats=int(payment.value_msat),
+            )
+
     def invoice_to_value(self, invoice) -> Optional[ValueForValue]:
         if not invoice.settled:
             return
@@ -106,44 +214,10 @@ class LightningService:
         elif "podcastindex_records_v1" in custom_records:
             record = custom_records["podcastindex_records_v1"]
 
-            timestamp = None
-            try:
-                if "ts" in record:
-                    timestamp = int(record["ts"])
-                elif "time" in record:
-                    struct_time = time.strptime(record["time"], "%H:%M:%S")
-                    timestamp = (
-                        struct_time.tm_hour * 60 * 60
-                        + struct_time.tm_min * 60
-                        + struct_time.tm_sec
-                    )
-            except TypeError:
-                pass
-
-            amount_msats_total = None
-            if "value_msat_total" in record:
-                amount_msats_total = int(record["value_msat_total"])
-
-            return ValueForValue(
+            return self.podcastindex_record_v1_to_value(
+                record,
                 creation_date=datetime.fromtimestamp(int(invoice.creation_date)),
                 amount_msats=int(invoice.value_msat),
-                amount_msats_total=amount_msats_total,
-                boost=record.get("action") == "boost",
-                sender_name=record.get("sender_name"),
-                sender_id=record.get("sender_id"),
-                sender_key=record.get("sender_key"),
-                sender_app_name=record.get("app_name"),
-                sender_app_version=record.get("app_version"),
-                receiver_name=record.get("name"),
-                message=record.get("message"),
-                podcast_title=record.get("podcast"),
-                podcast_url=record.get("url"),
-                podcast_guid=record.get("guid"),
-                episode_title=record.get("episode"),
-                episode_guid=record.get("episode_guid"),
-                podcast_index_feed_id=record.get("feedID"),
-                podcast_index_item_id=record.get("itemID"),
-                timestamp=timestamp,
             )
 
     def pay_boost_invoice(self, invoice: BoostInvoice):
