@@ -10,7 +10,7 @@ long_description = (this_directory / "README.md").read_text()
 
 setup(
     name="BoostCLI",
-    version="0.4.2",
+    version="0.5.0",
     python_requires=">=3.7",
     description="Command line tool to send and receive Podcasting 2.0 Value",
     long_description=long_description,
