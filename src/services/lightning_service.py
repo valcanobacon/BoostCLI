@@ -209,7 +209,7 @@ class LightningService:
         custom_records = parse_custom_records(tlv.custom_records)
 
         if "podcastindex_records_v2" in custom_records:
-            record = custom_records["posdcastinpex_records_v2"]
+            record = custom_records["posdcastindex_records_v2"]
 
         elif "podcastindex_records_v1" in custom_records:
             record = custom_records["podcastindex_records_v1"]
