@@ -7,38 +7,61 @@ import time
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Generator, Optional
+import os
 
 import grpc
 from google.protobuf.json_format import MessageToJson
-from lndgrpc import LNDClient
 
 from src.models import BoostInvoice, ValueForValue
+from src.providers.lightning_provider import LightningProvider, channel_from
+from src.lnd import lightning_pb2 as ln
+
+
+def read_macaroon(filename):
+    with open(filename, "rb") as file_:
+        return codecs.encode(file_.read(), "hex")
+
+
+def read_tlscert(filename):
+    with open(filename, "rb") as file_:
+        return file_.read()
 
 
 def client_from(
     host: str, port: str, cert_filepath: str, macaroon_filepath: str
-) -> grpc.Channel:
-    return LNDClient(
-        ip_address=f"{host}:{port}",
-        cert_filepath=cert_filepath,
-        macaroon_filepath=macaroon_filepath,
+) -> "LightningService":
+    # from: https://github.com/lightningnetwork/lnd/blob/master/docs/grpc/python.md
+    # Due to updated ECDSA generated tls.cert we need to let gprc know that
+    # we need to use that cipher suite otherwise there will be a handhsake
+    # error when we communicate with the lnd rpc server.
+    os.environ["GRPC_SSL_CIPHER_SUITES"] = "HIGH+ECDSA"
+
+    return LightningService(
+        provider=LightningProvider.from_channel(
+            channel_from(
+                host=host,
+                port=port,
+                cert=read_tlscert(filename=cert_filepath),
+                macaroon=read_macaroon(filename=macaroon_filepath),
+            )
+        )
     )
 
 
 @dataclass(frozen=True)
 class LightningService:
 
-    client: LNDClient
+    provider: LightningProvider
 
     @classmethod
-    def from_client(cls, client: LNDClient) -> "LightningService":
-        return LightningService(client=client)
+    def from_client(cls, provider: LightningProvider) -> "LightningService":
+        return LightningService(provider=provider)
 
     def parse_grpc_message(self, grpc_message) -> Any:
         return json.loads(MessageToJson(grpc_message))
 
     def get_info(self):
-        return self.client.get_info()
+        return self.provider.lightning_stub.GetInfo(ln.GetInfoRequest())
 
     def invoices(
         self,
@@ -48,11 +71,13 @@ class LightningService:
         pending_only=False,
     ) -> Generator:
 
-        response = self.client.list_invoices(
-            index_offset=index_offset,
-            num_max_invoices=max_number_of_invoices,
-            reversed=accending,
-            pending_only=pending_only,
+        response = self.provider.lightning_stub.ListInvoices(
+            ln.ListInvoiceRequest(
+                index_offset=index_offset,
+                num_max_invoices=max_number_of_invoices,
+                reversed=accending,
+                pending_only=pending_only,
+            )
         )
 
         if not response:
@@ -72,10 +97,12 @@ class LightningService:
         accending=True,
     ) -> Generator:
 
-        response = self.client.list_payments(
-            index_offset=index_offset,
-            max_payments=max_payments,
-            reversed=accending,
+        response = self.provider.lightning_stub.ListPayments(
+            ln.ListPaymentsRequest(
+                index_offset=index_offset,
+                max_payments=max_payments,
+                reversed=accending,
+            )
         )
 
         if not response:
@@ -89,7 +116,9 @@ class LightningService:
         yield from payments
 
     def watch_value_received(self):
-        for invoice in self.client.subscribe_invoices():
+        for invoice in self.provider.lightning_stub.SubscribeInvoices(
+            ln.InvoiceSubscription()
+        ):
             try:
                 value = self.invoice_to_value(invoice)
             except:
@@ -259,14 +288,17 @@ class LightningService:
 
             dest = codecs.decode(destination.receiver_address, "hex")
 
-            response = self.client.send_payment(
-                payment_request=None,
-                fee_limit_msat=int(destination.amount_msats * 0.10),
-                dest=dest,
-                amt_msat=destination.amount_msats,
-                dest_custom_records=custom_records,
-                payment_hash=bytes.fromhex(hashed_secret),
-                allow_self_payment=True,
+            fee_limit = ln.FeeLimit(fixed_msat=int(destination.amount_msats * 0.10))
+            response = self.provider.lightning_stub.SendPaymentSync(
+                ln.SendRequest(
+                    payment_request=None,
+                    fee_limit=fee_limit,
+                    dest=dest,
+                    amt_msat=destination.amount_msats,
+                    dest_custom_records=custom_records,
+                    payment_hash=bytes.fromhex(hashed_secret),
+                    allow_self_payment=True,
+                )
             )
             if not response:
                 continue

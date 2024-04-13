@@ -1,3 +1,43 @@
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "BoostBots"
+version = "0.5.0"
+authors = [{email = "boostcli.v1pty@slmail.me" }]
+description = "Boost Bots"
+requires-python = ">=3.7"
+dependencies = [
+    "grpcio<2,>=1.62",
+    "aiogrpc<2,>=1.8",
+    "click<9,>=8.0.3",
+    "beautifulsoup4<5,>=4.10.0",
+    "lxml<5,>=4.7.1",
+    "requests<3,>=2.27.1",
+    "tabulate<1,>=0.8.9",
+    "tqdm<5,>=4.62.3",
+    "rich<13,>=12.5.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "grpcio-tools<2,>=1.62",
+    "pytest<7,>=6.2.5",
+    "flake8<5,>=4.0.1",
+    "flake8-black<1,>=0.3.2",
+]
+deploy = [
+    "build<1,>=0.8.0",
+    "twine<5,>=4.0.1",
+]
+
+[project.scripts]
+boostcli = "src.cli:cli"
+
+[tool.setuptools]
+include-package-data = false
+
+[tool.setuptools.packages.find]
+include = ["src"] # src.*
+namespaces = false

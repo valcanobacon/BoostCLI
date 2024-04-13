@@ -34,11 +34,13 @@ CONTEXT_SETTINGS = dict(
     "--macaroon",
     type=click.Path(exists=True),
     help="Path to the Macaroon for LND for access to the LND server",
+    default="admin.macaroon"
 )
 @click.option(
     "--tlscert",
     type=click.Path(exists=True),
     help="Path of the TLS Certificate for connection to the LND server",
+    default="tls.cert"
 )
 @click.pass_context
 def cli(ctx, **kwargs):
@@ -67,13 +69,11 @@ def cli(ctx, **kwargs):
     console = ctx.obj["console"] = Console()
     console_error = ctx.obj["console_error"] = Console(stderr=True, style="bold red")
 
-    lightning_service = ctx.obj["lightning_service"] = LightningService(
-        client=lightning_client_from(
-            host=kwargs["address"],
-            port=kwargs["port"],
-            cert_filepath=kwargs["tlscert"],
-            macaroon_filepath=kwargs["macaroon"],
-        )
+    lightning_service = ctx.obj["lightning_service"] = lightning_client_from(
+        host=kwargs["address"],
+        port=kwargs["port"],
+        cert_filepath=kwargs["tlscert"],
+        macaroon_filepath=kwargs["macaroon"],
     )
 
     ctx.obj["podcast_index_service"] = PodcastIndexService(
