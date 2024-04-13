@@ -9,8 +9,6 @@ from datetime import datetime
 from typing import Any, Generator, Optional
 import os
 
-from google.protobuf.json_format import MessageToJson
-
 from src.models import BoostInvoice, ValueForValue
 from src.providers.lightning_provider import LightningProvider, channel_from
 from src.lnd import lightning_pb2 as ln
@@ -55,9 +53,6 @@ class LightningService:
     @classmethod
     def from_client(cls, provider: LightningProvider) -> "LightningService":
         return LightningService(provider=provider)
-
-    def parse_grpc_message(self, grpc_message) -> Any:
-        return json.loads(MessageToJson(grpc_message))
 
     def get_info(self):
         return self.provider.lightning_stub.GetInfo(ln.GetInfoRequest())
