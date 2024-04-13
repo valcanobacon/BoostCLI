@@ -9,7 +9,6 @@ from datetime import datetime
 from typing import Any, Generator, Optional
 import os
 
-import grpc
 from google.protobuf.json_format import MessageToJson
 
 from src.models import BoostInvoice, ValueForValue

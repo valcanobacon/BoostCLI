@@ -6,7 +6,6 @@ from rich.console import Console
 from src.services.feed_service import FeedService
 
 from src.providers.podcast_index_provider import PodcastIndexProvider
-from src.services.lightning_service import LightningService
 from src.services.lightning_service import client_from as lightning_client_from
 from src.services.podcast_index_service import PodcastIndexService
 
@@ -34,13 +33,13 @@ CONTEXT_SETTINGS = dict(
     "--macaroon",
     type=click.Path(exists=True),
     help="Path to the Macaroon for LND for access to the LND server",
-    default="admin.macaroon"
+    default="admin.macaroon",
 )
 @click.option(
     "--tlscert",
     type=click.Path(exists=True),
     help="Path of the TLS Certificate for connection to the LND server",
-    default="tls.cert"
+    default="tls.cert",
 )
 @click.pass_context
 def cli(ctx, **kwargs):

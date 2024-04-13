@@ -40,7 +40,7 @@ class FeedService:
         podcast_liveitems = response.data.find_all(
             "podcast:liveitem",
             recursive=True,
-            attrs={"status": "live"}
+            attrs={"status": "live"},
             # "podcast:liveitem", recursive=True,
         )
         for soup in podcast_liveitems:
