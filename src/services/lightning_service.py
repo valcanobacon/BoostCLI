@@ -263,6 +263,7 @@ class LightningService:
                 "itemID": value.podcast_index_item_id,
                 "ts": value.timestamp,
                 "value_msat_total": value.amount_msats_total,
+                "pubkey": value.pubkey,
             }
             value = json.dumps({k: v for k, v in value.items() if v is not None})
             value = value.encode("utf8")

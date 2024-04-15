@@ -53,12 +53,14 @@ class ValueForValue:
     timestamp: Optional[int] = None
     custom_key: Optional[int] = None
     custom_value: Optional[bytes] = None
+    pubkey: Optional[str] = None
 
 
 @dataclass
 class BoostInvoice:
     amount: int
     podcast_value: PodcastValue
+    pubkey: Optional[str]
     fees: List[ValueForValue] = field(init=False, default_factory=lambda: [])
     payments: List[ValueForValue] = field(init=False, default_factory=lambda: [])
     amount_fees: int = field(init=False, default=0)
@@ -72,11 +74,13 @@ class BoostInvoice:
         message: str,
         sender_name: str,
         sender_app_name: str,
+        pubkey: Optional[str],
     ) -> "BoostInvoice":
 
         invoice = BoostInvoice(
             amount=amount,
             podcast_value=podcast_value,
+            pubkey=pubkey,
         )
 
         for destination in invoice.podcast_value.destinations:
@@ -100,6 +104,7 @@ class BoostInvoice:
                     sender_app_name=sender_app_name,
                     custom_key=destination.custom_key,
                     custom_value=destination.custom_value,
+                    pubkey=pubkey,
                 )
             )
 

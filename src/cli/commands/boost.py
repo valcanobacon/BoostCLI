@@ -63,6 +63,11 @@ ASCII = "\n".join(
 @click.option("--message", help="The message to include in the Boost")
 @click.option("--sender-name", help="The name indicating who sent the Boost")
 @click.option(
+    "--send-pubkey/--no-send-pubkey", 
+    default=None,
+    help="Include your pubkey to allow recipient to boost back",
+)
+@click.option(
     "--support-app/--no-support-app",
     default=True,
     help="Pay 1% Fee to Support BoostCLI",
@@ -70,7 +75,7 @@ ASCII = "\n".join(
 @click.option(
     "-y", "--yes", is_flag=True, help="Bypasses message and confirmation prompts"
 )
-def boost(ctx, search_term, amount, message, sender_name, support_app, yes):
+def boost(ctx, search_term, amount, message, sender_name, send_pubkey, support_app, yes):
     """
     BoostCLI will try to find the Podcast by the given SEARCH_TERM which
     can one of many different things: Feed URL, Podcast Index Feed ID,
@@ -87,7 +92,7 @@ def boost(ctx, search_term, amount, message, sender_name, support_app, yes):
     console_error: Console = ctx.obj["console_error"]
     feed_service: FeedService = ctx.obj["feed_service"]
     pi_service: Optional[PodcastIndexService] = ctx.obj.get("podcast_index_service")
-    lighting_service: LightningService = ctx.obj["lightning_service"]
+    lightning_service: LightningService = ctx.obj["lightning_service"]
 
     pv = find_podcast_value(console, feed_service, pi_service, search_term)
     if pv is None:
@@ -172,6 +177,13 @@ def boost(ctx, search_term, amount, message, sender_name, support_app, yes):
             Text("Sender name", "bold cyan"), default=0, show_default=False
         )
 
+    pubkey=None
+    if send_pubkey is None and not yes:
+        if Confirm.ask("Send pubkey to allow replay?", default=0, show_default=False):
+            pubkey=lightning_service.get_info().identity_pubkey
+    elif send_pubkey:
+        pubkey=lightning_service.get_info().identity_pubkey
+    
     if message is None and not yes:
         message = click.edit("Write message... 300 characters max")
         message = message[:300]
@@ -182,6 +194,7 @@ def boost(ctx, search_term, amount, message, sender_name, support_app, yes):
         message=message,
         sender_name=sender_name,
         sender_app_name="BoostCLI",
+        pubkey=pubkey,
     )
 
     table = Table(expand=True, box=None)
@@ -243,7 +256,7 @@ def boost(ctx, search_term, amount, message, sender_name, support_app, yes):
     )
 
     with progress:
-        payments = lighting_service.pay_boost_invoice(boost_invoice)
+        payments = lightning_service.pay_boost_invoice(boost_invoice)
         for i, payment in enumerate(payments):
             dest = pv.destinations[i]
 
